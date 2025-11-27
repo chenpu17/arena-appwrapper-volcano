@@ -86,8 +86,7 @@ type SubmitAppWrapperJobArgs struct {
 	// for the job to be considered ready. Used by Volcano scheduler.
 	MinAvailable int32 `yaml:"minAvailable,omitempty"`
 
-	// SchedulerName specifies the scheduler to use, default is "volcano"
-	SchedulerName string `yaml:"schedulerName,omitempty"`
+	// Note: SchedulerName is inherited from CommonSubmitArgs (--scheduler flag)
 
 	// TaskName specifies the name of the task in Volcano Job
 	TaskName string `yaml:"taskName,omitempty"`
