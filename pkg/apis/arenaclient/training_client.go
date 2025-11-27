@@ -87,6 +87,9 @@ func (t *TrainingJobClient) Submit(job *apistraining.Job) error {
 	case types.RayJob:
 		args := job.Args().(*types.SubmitRayJobArgs)
 		return training.SubmitRayJob(t.namespace, args)
+	case types.AppWrapperJob:
+		args := job.Args().(*types.SubmitAppWrapperJobArgs)
+		return training.SubmitAppWrapperJob(t.namespace, args)
 	}
 	return nil
 }

@@ -27,6 +27,7 @@ Available Commands:
   horovod,hj           Submit a Horovod Job.
   volcanojob,vj        Submit a VolcanoJob.
   rayjob,rj            Submit a RayJob.
+  appwrapperjob,aw     Submit an AppWrapperJob with Kueue integration.
     `
 )
 
@@ -49,5 +50,6 @@ func NewSubmitCommand() *cobra.Command {
 	command.AddCommand(NewSubmitETJobCommand())
 	command.AddCommand(NewSubmitDeepSpeedJobCommand())
 	command.AddCommand(NewSubmitRayJobCommand())
+	command.AddCommand(NewSubmitAppWrapperJobCommand())
 	return command
 }

@@ -1,0 +1,134 @@
+# Default values for appwrapperjob.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+useHostNetwork: false
+useHostPID: true
+useHostIPC: true
+gpuCount: 0 # user define
+
+# devices resources
+#devices: amd.com/gpu=1
+
+# rsync image
+rsyncImage: registry.cn-zhangjiakou.aliyuncs.com/acs/rsync:v3.1.0-aliyun
+# git sync image
+gitImage: registry.cn-zhangjiakou.aliyuncs.com/acs/git-sync:v3.3.5
+
+privileged: false
+
+useTensorboard: false
+tensorboardImage: registry.cn-zhangjiakou.aliyuncs.com/acs/tensorflow:1.12.0-devel
+tensorboardImagePullpolicy: Always
+tensorboardServiceType: NodePort
+
+tensorboardResources: {}
+
+annotations: {}
+labels: {}
+
+envs: {}
+
+# enable RDMA support
+enableRDMA: false
+
+ingress: false
+
+# enable PodSecurityContext
+enablePodSecurityContext: false
+
+# enable priorityClassName
+priorityClassName: ""
+
+# Defines the policy for cleaning up pods after the PyTorchJob completes.
+cleanPodPolicy: "Running"
+
+# rankN, is local training when N = 0
+workers: 0
+
+imagePullPolicy: Always
+
+# add pod group
+podGroupName: ""
+podGroupMinAvailable: "1"
+
+# Node selectors for scheduling
+nodeSelectors: {}
+
+# Tolerations for scheduling
+tolerations: []
+
+# Image pull secrets
+imagePullSecrets: []
+
+# Config files mapping
+configFiles: {}
+
+# Shell to use
+shell: "/bin/sh"
+
+# AppWrapper specific configurations
+# Kueue queue name for resource quota management
+kueueQueueName: ""
+
+# Maximum number of retries before marking as Failed
+retryLimit: 3
+
+# Duration to wait for pods to be admitted
+admissionGracePeriod: "1m"
+
+# Duration to wait for pods to become ready
+warmupGracePeriod: "5m"
+
+# Duration to wait before treating a failure as permanent
+failureGracePeriod: "1m"
+
+# Duration to pause between retries
+retryPausePeriod: "90s"
+
+# Duration after which a successful AppWrapper is deleted
+successTTL: ""
+
+# Inner job type: "pytorch" or "volcano"
+innerJobType: "pytorch"
+
+# Whether to suspend the AppWrapper initially
+suspend: false
+
+# ========== Volcano Job specific configurations ==========
+# These only apply when innerJobType is "volcano"
+
+# Minimum available pods for gang scheduling (Volcano)
+# If 0 or not set, defaults to replicas
+minAvailable: 0
+
+# Scheduler name for Volcano Job
+schedulerName: "volcano"
+
+# Task name in Volcano Job
+taskName: "worker"
+
+# Maximum retry count for task failures
+maxRetry: 10000
+
+# Number of replicas (for Volcano Job)
+replicas: 1
+
+# Network Topology settings
+# Mode: "hard" (must satisfy) or "soft" (prefer)
+networkTopologyMode: ""
+# Highest network topology tier allowed (lower = lower latency)
+highestTierAllowed: 0
+
+# Partition Policy settings
+# Total number of partitions for distributed tasks
+totalPartitions: 0
+# Number of pods per partition
+partitionSize: 0
+# Network topology mode within partitions
+partitionNetworkTopologyMode: ""
+# Highest tier allowed within partitions
+partitionHighestTierAllowed: 0
+
+# Ring controller label for hardware affinity (e.g., "ascend-1980")
+ringController: ""

@@ -42,6 +42,8 @@ const (
 	UnknownTrainingJob TrainingJobType = "unknown"
 	// RayJob defines the ray job
 	RayJob TrainingJobType = "rayjob"
+	// AppWrapperJob defines the appwrapper job (CodeFlare/Kueue integration)
+	AppWrapperJob TrainingJobType = "appwrapperjob"
 )
 
 type TrainingJobTypeInfo struct {
@@ -101,6 +103,11 @@ var TrainingTypeMap = map[TrainingJobType]TrainingJobTypeInfo{
 		Name:      RayJob,
 		Alias:     "RayJob",
 		Shorthand: "rj",
+	},
+	AppWrapperJob: {
+		Name:      AppWrapperJob,
+		Alias:     "AppWrapper",
+		Shorthand: "aw",
 	},
 }
 

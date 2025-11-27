@@ -38,4 +38,7 @@ const (
 
 	LWSCRDName             = "leaderworkersets.leaderworkerset.x-k8s.io"
 	LWSCRDNameInDaemonMode = "Leaderworkerset.leaderworkerset.x-k8s.io"
+
+	AppWrapperCRDName             = "appwrappers.workload.codeflare.dev"
+	AppWrapperCRDNameInDaemonMode = "AppWrapper.workload.codeflare.dev"
 )
