@@ -364,11 +364,20 @@ ls ~/charts/appwrapperjob  # 或 /charts/appwrapperjob
 
 ### 环境要求 / Requirements
 
+**编译环境 / Build Requirements:**
 | 依赖 / Dependency | 版本 / Version | 说明 / Notes |
 |------------------|----------------|--------------|
-| Go | >= 1.22 | 编译需要 / Required for build |
+| Go | >= 1.22 | 仅编译需要 / Only for building |
+
+**运行环境 / Runtime Requirements:**
+| 依赖 / Dependency | 版本 / Version | 说明 / Notes |
+|------------------|----------------|--------------|
 | kubectl | - | 集群访问 / Cluster access |
-| Helm | >= 3.0 | Chart 渲染 / Chart rendering |
+| Helm | >= 3.0 | Chart 渲染（已内置）/ Chart rendering (bundled) |
+
+> **注意 / Note**: 使用预编译安装包时，不需要安装 Go。Helm 已包含在安装包中。
+>
+> When using pre-built installer, Go is NOT required. Helm is bundled in the installer.
 
 ---
 
