@@ -1,0 +1,80 @@
+# 1. 顶层资源标识：指定Codeflare AppWrapper的API组和版本
+apiVersion: workload.codeflare.dev/v1beta2 # workload.codeflare.dev：Codeflare的自定义API组；v1beta2：Beta版本，功能基本稳定
+kind: AppWrapper # 资源类型为AppWrapper（Codeflare核心CR，用于封装管理复杂工作负载）
+
+# 2. 元数据配置：资源的标识信息
+metadata:
+  name: sample-wrapper-vcjob # AppWrapper资源的名称，同命名空间唯一
+  labels:
+    # Kueue队列标签：将该任务关联到team-a-queue队列，由Kueue做资源配额和队列调度
+    kueue.x-k8s.io/queue-name: team-a-queue
+
+# 3. 核心规格配置：AppWrapper的工作负载定义
+spec:
+  components: # 定义AppWrapper封装的工作负载组件列表（可包含多个资源）
+    - podSets: # Codeflare自定义字段，定义Pod集合的副本数和模板映射关系
+        - path: "template.spec.tasks[0].template" # 副本数策略映射到嵌套Volcano Job的Pod模板路径
+          replicas: 4 # 该Pod集合的期望副本数为4
+      template: # 嵌套的工作负载模板：这里是Volcano Job（批处理调度任务）
+        # 3.1 Volcano Job的API标识
+        apiVersion: batch.volcano.sh/v1alpha1 # batch.volcano.sh：Volcano的API组；v1alpha1：内测版本
+        kind: Job # 资源类型为Volcano Job（区别于K8s原生Job，专为批处理/AI任务设计）
+        # 3.2 Volcano Job的元数据
+        metadata:
+          name: test-job # Volcano Job的名称
+          labels:
+            # Volcano环形控制器标签：关联华为昇腾1980 AI芯片，用于硬件亲和性调度
+            "ring-controller.volcano": "ascend-1980"
+        # 3.3 Volcano Job的核心规格
+        spec:
+          minAvailable: 4 # 任务最小可用副本数：至少4个Pod启动成功，任务才视为就绪
+          schedulerName: volcano # 指定使用Volcano调度器（而非K8s原生kube-scheduler）
+          networkTopology: # Volcano网络拓扑策略：优化高性能计算的网络延迟
+            mode: hard # 硬约束：必须满足拓扑要求才调度（soft为优先满足）
+            highestTierAllowed: 2 # 允许的最高网络拓扑层级为2（层级越低，节点间网络延迟越小）
+          tasks: # Volcano Job的子任务列表（一个Job可包含多个子任务）
+            - replicas: 4 # 该子任务的副本数为4（与顶层podSets.replicas一致）
+              name: "worker1" # 子任务名称，用于标识不同子任务
+              maxRetry: 10000 # 子任务最大重试次数：Pod失败时自动重试，最多10000次
+              partitionPolicy: # Volcano分区策略：将Pod副本划分为多个分区执行（适用于分布式任务）
+                totalPartitions: 2 # 总分区数：将4个Pod分为2个分区
+                partitionSize: 2 # 每个分区的Pod数：2个Pod/分区
+                networkTopology: # 分区内的网络拓扑约束（比全局更严格）
+                  mode: hard
+                  highestTierAllowed: 1 # 分区内Pod的最高网络拓扑层级为1
+              template: # 子任务的Pod模板（与K8s原生Pod模板一致）
+                # 3.4 Pod元数据
+                metadata:
+                  labels:
+                    # 与Volcano Job一致的芯片标签，确保Pod调度到昇腾1980节点
+                    ring-controller.volcano: ascend-1980
+                # 3.5 Pod核心规格
+                spec:
+                  containers: # Pod内的容器列表（这里只有一个主容器）
+                    - env: # 容器环境变量配置
+                        - name: ASCEND_VISIBLE_DEVICES # 昇腾芯片设备可见性变量：指定Pod可使用的昇腾芯片
+                          valueFrom:
+                            fieldRef:
+                              # 动态从Pod注解中获取芯片设备号（由华为K8s设备插件注入）
+                              fieldPath: metadata.annotations['huawei.com/ascend-visible-devices']
+                      image: xx # 容器镜像地址（占位符，需替换为昇腾芯片适配的镜像）
+                      command: ["/bin/sh", "-c", "sleep 3000"] # 容器启动命令：休眠50分钟，模拟批处理任务
+                      imagePullPolicy: IfNotPresent # 镜像拉取策略：本地有镜像则复用，无则拉取
+                      name: main-con # 容器名称，Pod内唯一
+                      resources: # 容器资源请求与限制（K8s调度的核心依据）
+                        requests: # 资源请求：向K8s申请的最小资源
+                          cpu: 10m # 申请10毫核CPU（1核=1000毫核）
+                          huawei.com/ascend-1980: 16 # 申请16单位的昇腾1980芯片资源（单位由华为设备插件定义）
+                        limits: # 资源限制：容器能使用的最大资源（与请求一致，避免超用）
+                          cpu: 10m
+                          huawei.com/ascend-1980: 16
+                  restartPolicy: Never # Pod重启策略：容器失败后不重启，由Volcano的maxRetry重新创建Pod
+                  tolerations: # Pod容忍度：允许调度到带有特定污点的节点
+                    - effect: NoExecute # 污点影响：触发Pod驱逐
+                      key: node.kubernetes.io/unreachable # 容忍节点"不可达"污点
+                      operator: Exists # 匹配规则：只要节点存在该污点即容忍
+                      tolerationSeconds: 60 # 延迟驱逐：节点不可达后，60秒再驱逐Pod
+                    - effect: NoExecute # 污点影响：触发Pod驱逐
+                      key: node.kubernetes.io/not-ready # 容忍节点"未就绪"污点
+                      operator: Exists
+                      tolerationSeconds: 60 # 延迟驱逐：节点未就绪后，60秒再驱逐Pod
