@@ -311,6 +311,67 @@ make arena
 ./bin/arena-v*-$(go env GOOS)-$(go env GOARCH)
 ```
 
+---
+
+## 安装指南 / Installation
+
+### 方式一：使用安装脚本（推荐）/ Method 1: Using Installer (Recommended)
+
+```bash
+# 1. 编译并创建安装包 / Build and create installer
+make arena-installer
+
+# 2. 解压安装包 / Extract installer
+tar -xzf arena-installer-*.tar.gz
+cd arena-installer-*
+
+# 3. 运行安装脚本 / Run installer
+# 仅安装 CLI 和 charts / Install CLI and charts only
+./install.sh --only-binary
+
+# 或完整安装（包含 operators）/ Or full installation (with operators)
+# ./install.sh
+```
+
+安装脚本自动完成 / Installer automatically handles:
+- 安装 arena 二进制到 `/usr/local/bin/arena`
+- 安装 `arena-kubectl` 和 `arena-helm`
+- 安装 Helm charts 到 `/charts`（root）或 `~/charts`（非 root）
+
+### 方式二：手动安装 / Method 2: Manual Installation
+
+```bash
+# 1. 编译 / Build
+make arena
+
+# 2. 安装二进制 / Install binary
+sudo cp bin/arena-* /usr/local/bin/arena
+
+# 3. 安装 charts / Install charts
+# root 用户 / For root user:
+sudo cp -r charts /charts
+# 非 root 用户 / For non-root user:
+cp -r charts ~/charts
+
+# 4. 创建 arena-kubectl 链接 / Create arena-kubectl symlink
+sudo ln -s $(which kubectl) /usr/local/bin/arena-kubectl
+
+# 5. 验证安装 / Verify installation
+arena version
+arena-kubectl version --client
+ls ~/charts/appwrapperjob  # 或 /charts/appwrapperjob
+```
+
+### 环境要求 / Requirements
+
+| 依赖 / Dependency | 版本 / Version | 说明 / Notes |
+|------------------|----------------|--------------|
+| Go | >= 1.22 | 编译需要 / Required for build |
+| kubectl | - | 集群访问 / Cluster access |
+| Helm | >= 3.0 | Chart 渲染 / Chart rendering |
+
+---
+
 ## 许可证 / License
 
 Apache License 2.0
