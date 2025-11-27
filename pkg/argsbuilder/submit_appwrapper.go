@@ -104,6 +104,7 @@ func (s *SubmitAppWrapperJobArgsBuilder) AddCommandFlags(command *cobra.Command)
 	command.Flags().StringVar(&s.args.TaskName, "task-name", "worker", "Name of the task in Volcano Job.")
 	command.Flags().Int32Var(&s.args.MaxRetry, "max-retry", 10000, "Maximum number of retries for a task (Volcano).")
 	command.Flags().Int32Var(&s.args.Replicas, "replicas", 1, "Number of replicas for Volcano Job tasks.")
+	command.Flags().Int32Var(&s.args.MasterPort, "master-port", 23456, "Port for distributed training communication (Volcano).")
 
 	// Network Topology settings (Volcano)
 	command.Flags().StringVar(&s.args.NetworkTopologyMode, "network-topology-mode", "", "Network topology mode: 'hard' (must satisfy) or 'soft' (prefer).")
@@ -138,6 +139,12 @@ func (s *SubmitAppWrapperJobArgsBuilder) Build() error {
 			return err
 		}
 	}
+	// For Volcano mode, sync Replicas to WorkerCount and update related values
+	// This must be done AFTER sub-builders run, as they set envs["workers"],
+	// PodGroupMinAvailable, and request-gpus based on WorkerCount
+	if err := s.syncVolcanoWorkerCount(); err != nil {
+		return err
+	}
 	if err := s.setRunPolicy(); err != nil {
 		return err
 	}
@@ -150,6 +157,37 @@ func (s *SubmitAppWrapperJobArgsBuilder) Build() error {
 	if err := s.addEnv(); err != nil {
 		return err
 	}
+	return nil
+}
+
+// syncVolcanoWorkerCount synchronizes Replicas to WorkerCount for Volcano mode
+// and updates all related values that were set by sub-builders using the old WorkerCount
+func (s *SubmitAppWrapperJobArgsBuilder) syncVolcanoWorkerCount() error {
+	if s.args.InnerJobType != "volcano" {
+		return nil
+	}
+
+	// Sync Replicas to WorkerCount for consistent resource statistics
+	s.args.WorkerCount = int(s.args.Replicas)
+
+	// Update envs["workers"] which was set by SubmitArgsBuilder.setJobInfoToEnv()
+	if s.args.Envs == nil {
+		s.args.Envs = map[string]string{}
+	}
+	s.args.Envs["workers"] = strconv.Itoa(s.args.WorkerCount)
+
+	// Update PodGroupMinAvailable if coscheduling is enabled
+	// This was set by SubmitArgsBuilder.addPodGroupLabel()
+	if s.args.Coscheduling {
+		s.args.PodGroupMinAvailable = fmt.Sprintf("%v", s.args.WorkerCount)
+	}
+
+	// Update request-gpus annotation which was set by SubmitArgsBuilder.addRequestGPUsToAnnotation()
+	if s.args.Annotations == nil {
+		s.args.Annotations = map[string]string{}
+	}
+	s.args.Annotations[types.RequestGPUsOfJobAnnoKey] = fmt.Sprintf("%v", s.args.WorkerCount*s.args.GPUCount)
+
 	return nil
 }
 
@@ -261,6 +299,11 @@ func (s *SubmitAppWrapperJobArgsBuilder) check() error {
 
 	// Volcano-specific validations
 	if s.args.InnerJobType == "volcano" {
+		// Validate master port
+		if s.args.MasterPort <= 0 || s.args.MasterPort > 65535 {
+			return fmt.Errorf("--master-port must be between 1 and 65535, got %d", s.args.MasterPort)
+		}
+
 		// Validate network topology mode
 		if s.args.NetworkTopologyMode != "" {
 			switch s.args.NetworkTopologyMode {
@@ -337,7 +380,9 @@ func (s *SubmitAppWrapperJobArgsBuilder) addEnv() error {
 		s.args.Envs = map[string]string{}
 	}
 
-	if s.args.EnableRDMA {
+	// Only set MASTER_ADDR for PyTorchJob mode
+	// For Volcano mode, MASTER_ADDR is set in the Helm template with correct DNS name
+	if s.args.EnableRDMA && s.args.InnerJobType != "volcano" {
 		s.args.Envs["MASTER_ADDR"] = fmt.Sprintf("%v-master-0", s.args.Name)
 	}
 

@@ -114,6 +114,9 @@ maxRetry: 10000
 # Number of replicas (for Volcano Job)
 replicas: 1
 
+# Master port for distributed training (used in MASTER_ADDR for Volcano Job)
+masterPort: 23456
+
 # Network Topology settings
 # Mode: "hard" (must satisfy) or "soft" (prefer)
 networkTopologyMode: ""

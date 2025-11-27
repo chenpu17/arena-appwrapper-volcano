@@ -17,6 +17,7 @@ package training
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -35,6 +36,10 @@ const (
 	// AppWrapper labels for pods
 	appWrapperLabelName = "workload.codeflare.dev/appwrapper"
 )
+
+// chiefPodSuffixPattern matches pod names ending with -0 (e.g., job-worker-0, job-master-0)
+// but NOT job-10, job-20, etc. Requires a non-digit character before -0
+var chiefPodSuffixPattern = regexp.MustCompile(`[^0-9]-0$`)
 
 // AppWrapperJob represents an AppWrapper training job
 type AppWrapperJob struct {
@@ -91,9 +96,23 @@ func (aj *AppWrapperJob) GetStatus() string {
 	case appwrapperv1beta2.AppWrapperEmpty, appwrapperv1beta2.AppWrapperSuspended:
 		status = string(types.TrainingJobQueuing)
 	case appwrapperv1beta2.AppWrapperResuming:
-		status = string(types.TrainingJobPending)
+		// Check conditions for more detailed status during resuming
+		if aj.hasCondition(appwrapperv1beta2.AppWrapperConditionQuotaReserved, true) {
+			if aj.hasCondition(appwrapperv1beta2.AppWrapperConditionResourcesDeployed, true) {
+				status = string(types.TrainingJobPending) // Resources deployed, waiting for pods
+			} else {
+				status = string(types.TrainingJobPending) // Quota reserved, deploying resources
+			}
+		} else {
+			status = string(types.TrainingJobQueuing) // Waiting for quota
+		}
 	case appwrapperv1beta2.AppWrapperRunning:
-		status = string(types.TrainingJobRunning)
+		// Check if unhealthy
+		if aj.hasCondition(appwrapperv1beta2.AppWrapperConditionUnhealthy, true) {
+			status = string(types.TrainingJobFailed)
+		} else {
+			status = string(types.TrainingJobRunning)
+		}
 	case appwrapperv1beta2.AppWrapperSucceeded:
 		status = string(types.TrainingJobSucceeded)
 	case appwrapperv1beta2.AppWrapperFailed:
@@ -105,6 +124,29 @@ func (aj *AppWrapperJob) GetStatus() string {
 	}
 
 	return status
+}
+
+// hasCondition checks if the AppWrapper has a specific condition with the expected status
+func (aj *AppWrapperJob) hasCondition(conditionType string, expectedStatus bool) bool {
+	for _, cond := range aj.appwrapper.Status.Conditions {
+		if string(cond.Type) == conditionType {
+			if expectedStatus {
+				return cond.Status == metav1.ConditionTrue
+			}
+			return cond.Status == metav1.ConditionFalse
+		}
+	}
+	return false
+}
+
+// GetConditionMessage returns the message from a specific condition type
+func (aj *AppWrapperJob) GetConditionMessage(conditionType string) string {
+	for _, cond := range aj.appwrapper.Status.Conditions {
+		if string(cond.Type) == conditionType {
+			return cond.Message
+		}
+	}
+	return ""
 }
 
 // StartTime returns the start time of the job
@@ -329,8 +371,9 @@ func (at *AppWrapperJobTrainer) isChiefPod(appwrapper *appwrapperv1beta2.AppWrap
 	if val, ok := item.Annotations["volcano.sh/task-index"]; ok && val == "0" {
 		return true
 	}
-	// Fallback: check pod name suffix for index 0
-	if len(item.Name) > 2 && item.Name[len(item.Name)-2:] == "-0" {
+	// Fallback: use regex to match pod names ending with -0 (e.g., job-worker-0, job-master-0)
+	// The pattern requires a non-digit before -0 to avoid matching job-10, job-20, etc.
+	if chiefPodSuffixPattern.MatchString(item.Name) {
 		return true
 	}
 	return false

@@ -119,6 +119,7 @@ spec:
                     {{ $key }}: {{ $value | quote }}
                   {{- end }}
               spec:
+                subdomain: {{ .Release.Name }}
                 restartPolicy: Never
                 {{- if ne (len .Values.nodeSelectors) 0 }}
                 nodeSelector:
@@ -327,6 +328,19 @@ spec:
                       fieldRef:
                         fieldPath: metadata.annotations['huawei.com/ascend-visible-devices']
                   {{- end }}
+                  {{- /* Distributed training environment variables for Volcano Job */}}
+                  {{- if or .Values.enableRDMA (gt (int .Values.replicas) 1) }}
+                  - name: MASTER_ADDR
+                    value: "{{ .Release.Name }}-{{ .Values.taskName | default "worker" }}-0.{{ .Release.Name }}"
+                  - name: MASTER_PORT
+                    value: "{{ .Values.masterPort | default 23456 }}"
+                  - name: WORLD_SIZE
+                    value: "{{ .Values.replicas | default 1 }}"
+                  - name: RANK
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.annotations['volcano.sh/task-index']
+                  {{- end }}
                   {{- if .Values.envs }}
                   {{- range $key, $value := .Values.envs }}
                   - name: "{{ $key }}"
@@ -387,7 +401,14 @@ spec:
                   {{- end }}
 {{- else }}
   {{- /* ==================== PyTorchJob (default) ==================== */}}
-  - template:
+  - podSets:
+      - path: "template.spec.pytorchReplicaSpecs.Master.template"
+        replicas: 1
+      {{- if .Values.workers }}
+      - path: "template.spec.pytorchReplicaSpecs.Worker.template"
+        replicas: {{ .Values.workers }}
+      {{- end }}
+    template:
       apiVersion: kubeflow.org/v1
       kind: PyTorchJob
       metadata:

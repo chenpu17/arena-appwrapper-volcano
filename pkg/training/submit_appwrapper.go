@@ -44,9 +44,13 @@ func SubmitAppWrapperJob(namespace string, submitArgs *types.SubmitAppWrapperJob
 	}
 
 	// For PyTorchJob, the master is also considered as a worker
-	// For Volcano Job, we use replicas directly without this adjustment
+	// WorkerCount includes the master, so we subtract 1 to get actual workers
+	// For Volcano Job, WorkerCount is already synced from Replicas in argsbuilder
 	if submitArgs.InnerJobType != "volcano" {
-		submitArgs.WorkerCount = submitArgs.WorkerCount - 1
+		if submitArgs.WorkerCount > 0 {
+			submitArgs.WorkerCount = submitArgs.WorkerCount - 1
+		}
+		// Note: WorkerCount=0 means only master pod, which is valid for single-node training
 	}
 
 	appwrapperjobChart := util.GetChartsFolder() + "/appwrapperjob"

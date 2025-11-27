@@ -428,6 +428,14 @@ func (b *AppWrapperJobBuilder) Replicas(replicas int32) *AppWrapperJobBuilder {
 	return b
 }
 
+// MasterPort sets the port for distributed training communication
+func (b *AppWrapperJobBuilder) MasterPort(port int32) *AppWrapperJobBuilder {
+	if port > 0 {
+		b.args.MasterPort = port
+	}
+	return b
+}
+
 // NetworkTopologyMode sets the network topology mode ("hard" or "soft")
 func (b *AppWrapperJobBuilder) NetworkTopologyMode(mode string) *AppWrapperJobBuilder {
 	if mode != "" {

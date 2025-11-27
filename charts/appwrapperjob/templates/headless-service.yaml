@@ -1,0 +1,28 @@
+{{- $innerJobType := .Values.innerJobType | default "pytorch" -}}
+{{- if eq $innerJobType "volcano" }}
+{{- /* Headless Service for Volcano Job DNS resolution */}}
+{{- /* This enables Pod DNS names like: <release>-<taskName>-0.<release>.<namespace>.svc.cluster.local */}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ template "appwrapperjob.name" . }}
+    chart: {{ template "appwrapperjob.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    createdBy: "AppWrapperJob"
+  {{- range $key, $value := .Values.labels }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+spec:
+  clusterIP: None
+  selector:
+    release: {{ .Release.Name }}
+    app: {{ template "appwrapperjob.name" . }}
+  ports:
+    - name: master-port
+      port: {{ .Values.masterPort | default 23456 }}
+      targetPort: {{ .Values.masterPort | default 23456 }}
+      protocol: TCP
+{{- end }}

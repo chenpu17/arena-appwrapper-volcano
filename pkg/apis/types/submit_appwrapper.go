@@ -98,6 +98,10 @@ type SubmitAppWrapperJobArgs struct {
 	// Replicas specifies the number of replicas for Volcano Job tasks
 	Replicas int32 `yaml:"replicas,omitempty"`
 
+	// MasterPort specifies the port for distributed training communication
+	// Default is 23456
+	MasterPort int32 `yaml:"masterPort,omitempty"`
+
 	// ========== Network Topology parameters (Volcano) ==========
 
 	// NetworkTopologyMode specifies the network topology mode
