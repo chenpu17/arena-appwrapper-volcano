@@ -381,6 +381,67 @@ ls ~/charts/appwrapperjob  # 或 /charts/appwrapperjob
 
 ---
 
+## 常见问题 / Troubleshooting
+
+### 1. Charts 目录未找到 / Charts directory not found
+
+**错误 / Error:**
+```
+ERRO[0000] failed to load chart /charts/appwrapperjob: no such file or directory
+```
+
+**解决方案 / Solution:**
+```bash
+# 复制 charts 到正确位置 / Copy charts to correct location
+# root 用户 / For root:
+sudo cp -r charts /charts
+# 非 root 用户 / For non-root:
+cp -r charts ~/charts
+```
+
+### 2. arena-kubectl 未找到 / arena-kubectl not found
+
+**错误 / Error:**
+```
+ERRO[0000] exec: "arena-kubectl": executable file not found in $PATH
+```
+
+**解决方案 / Solution:**
+```bash
+# 创建符号链接 / Create symlink
+sudo ln -s $(which kubectl) /usr/local/bin/arena-kubectl
+```
+
+### 3. 资源已存在 / Resource already exists
+
+**错误 / Error:**
+```
+ERRO[0000] Service "xxx" in namespace "default" exists and cannot be imported into the current release
+```
+
+**解决方案 / Solution:**
+```bash
+# 删除已存在的任务后重新提交 / Delete existing job and resubmit
+arena delete <job-name> --type appwrapperjob
+
+# 或手动删除 / Or delete manually
+kubectl delete service <job-name> -n <namespace>
+kubectl delete appwrapper <job-name> -n <namespace>
+```
+
+### 4. MLflow 服务未找到（可忽略）/ MLflow service not found (can be ignored)
+
+**错误 / Error:**
+```
+ERRO[0000] failed to create proxied model client: no mlflow service in any namespace found
+```
+
+**说明 / Note:** 这是可选的 MLflow 集成功能，不影响 AppWrapper 任务提交。可以安全忽略。
+
+This is an optional MLflow integration feature and does not affect AppWrapper job submission. Can be safely ignored.
+
+---
+
 ## 许可证 / License
 
 Apache License 2.0
