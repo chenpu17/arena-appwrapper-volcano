@@ -3,6 +3,8 @@
 [![GitHub release](https://img.shields.io/github/v/release/kubeflow/arena)](https://github.com/kubeflow/arena/releases) [![Integration Test](https://github.com/kubeflow/arena/actions/workflows/integration.yaml/badge.svg)](https://github.com/kubeflow/arena/actions/workflows/integration.yaml) [![Go Report Card](https://goreportcard.com/badge/github.com/kubeflow/arena)](https://goreportcard.com/report/github.com/kubeflow/arena)
 
 > 本项目是 [Kubeflow Arena](https://github.com/kubeflow/arena) 的增强版分支，新增了对 **AppWrapper** 和 **Volcano Job** 的完整支持，适用于大规模分布式训练场景。
+>
+> **Fork 基准**: Arena v0.15.3 | **代码修改**: 18 文件, 3,283 行 | 详见 [修改报告](MODIFICATION_REPORT.md)
 
 ---
 
