@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -328,6 +329,10 @@ func (at *AppWrapperJobTrainer) IsSupported(name, ns string) bool {
 func (at *AppWrapperJobTrainer) GetTrainingJob(name, namespace string) (TrainingJob, error) {
 	appwrapper, err := at.appwrapperClient.WorkloadV1beta2().AppWrappers(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
+		// Convert "not found" error to types.ErrTrainingJobNotFound
+		if strings.Contains(err.Error(), fmt.Sprintf(`"%v" not found`, name)) {
+			return nil, types.ErrTrainingJobNotFound
+		}
 		return nil, err
 	}
 
