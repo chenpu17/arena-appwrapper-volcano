@@ -140,7 +140,7 @@ func (s *ServingArgsBuilder) AddCommandFlags(command *cobra.Command) {
 
 	command.Flags().StringArrayVarP(&annotations, "annotation", "a", []string{}, `specify the annotations, usage: "--annotation=key=value" or "--annotation key=value"`)
 	command.Flags().StringArrayVarP(&labels, "label", "l", []string{}, "specify the labels")
-	command.Flags().StringArrayVarP(&tolerations, "toleration", "", []string{}, `tolerate some k8s nodes with taints,usage: "--toleration key=value:effect,operator" or "--toleration all" `)
+	command.Flags().StringArrayVarP(&tolerations, "toleration", "", []string{}, `tolerate some k8s nodes with taints. Formats: "key", "key:effect:operator[:seconds]", "key=value:effect:operator[:seconds]", "key=value:effect,operator" (legacy), or "all". Example: "--toleration dedicated=teamA:NoExecute:Equal:300"`)
 	command.Flags().StringArrayVarP(&selectors, "selector", "", []string{}, `assigning jobs to some k8s particular nodes, usage: "--selector=key=value" or "--selector key=value" `)
 
 	// add option --config-file its' value will be get from viper
@@ -524,8 +524,7 @@ func (s *ServingArgsBuilder) setTolerations() error {
 		}
 		tolerationArg, err := parseTolerationString(taintKey)
 		if err != nil {
-			log.Debug(err.Error())
-			continue
+			return fmt.Errorf("invalid --toleration '%s': %v", taintKey, err)
 		}
 		s.args.Tolerations = append(s.args.Tolerations, *tolerationArg)
 	}

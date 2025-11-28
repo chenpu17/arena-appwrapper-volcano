@@ -99,7 +99,7 @@ func (e *EvaluateJobArgsBuilder) AddCommandFlags(command *cobra.Command) {
 	command.Flags().StringArrayVarP(&envs, "env", "e", []string{}, "the environment variables")
 	command.Flags().StringArrayVarP(&annotations, "annotation", "a", []string{}, `the annotations, usage: "--annotation=key=value" or "--annotation key=value"`)
 	command.Flags().StringArrayVarP(&labels, "label", "", []string{}, "the labels")
-	command.Flags().StringArrayVar(&tolerations, "toleration", []string{}, `tolerate some k8s nodes with taints,usage: "--toleration key=value:effect,operator" or "--toleration all" `)
+	command.Flags().StringArrayVar(&tolerations, "toleration", []string{}, `tolerate some k8s nodes with taints. Formats: "key", "key:effect:operator[:seconds]", "key=value:effect:operator[:seconds]", "key=value:effect,operator" (legacy), or "all". Example: "--toleration dedicated=teamA:NoExecute:Equal:300"`)
 	// add option --selector, it's value will be get from viper
 	command.Flags().StringArrayVar(&nodeSelectors, "selector", []string{}, `assigning jobs to some k8s particular nodes, usage: "--selector=key=value" or "--selector key=value" `)
 	// add option --image-pull-secret it's value will be get from viper,Using a Private Registry
@@ -313,8 +313,7 @@ func (e *EvaluateJobArgsBuilder) setTolerations() error {
 		}
 		tolerationArg, err := parseTolerationString(taintKey)
 		if err != nil {
-			log.Debug(err.Error())
-			continue
+			return fmt.Errorf("invalid --toleration '%s': %v", taintKey, err)
 		}
 		e.args.Tolerations = append(e.args.Tolerations, *tolerationArg)
 	}

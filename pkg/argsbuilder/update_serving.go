@@ -87,7 +87,7 @@ func (s *UpdateServingArgsBuilder) AddCommandFlags(command *cobra.Command) {
 	command.Flags().StringArrayVarP(&labels, "label", "l", []string{}, "specify the labels")
 	command.Flags().StringVar(&s.args.Command, "command", "", "the command will inject to container's command.")
 	command.Flags().StringArrayVarP(&selectors, "selector", "", []string{}, `assigning jobs to some k8s particular nodes, usage: "--selector=key=value" or "--selector key=value" `)
-	command.Flags().StringArrayVarP(&tolerations, "toleration", "", []string{}, `tolerate some k8s nodes with taints,usage: "--toleration key=value:effect,operator" or "--toleration all" `)
+	command.Flags().StringArrayVarP(&tolerations, "toleration", "", []string{}, `tolerate some k8s nodes with taints. Formats: "key", "key:effect:operator[:seconds]", "key=value:effect:operator[:seconds]", "key=value:effect,operator" (legacy), or "all". Example: "--toleration dedicated=teamA:NoExecute:Equal:300"`)
 	command.Flags().StringArrayVarP(&dataset, "data", "d", []string{}, "specify the trained models datasource to mount for serving, like <name_of_datasource>:<mount_point_on_job>")
 
 	s.AddArgValue("env", &envs).
@@ -228,8 +228,7 @@ func (s *UpdateServingArgsBuilder) setTolerations() error {
 		}
 		tolerationArg, err := parseTolerationString(taintKey)
 		if err != nil {
-			log.Debug(err.Error())
-			continue
+			return fmt.Errorf("invalid --toleration '%s': %v", taintKey, err)
 		}
 		s.args.Tolerations = append(s.args.Tolerations, *tolerationArg)
 	}

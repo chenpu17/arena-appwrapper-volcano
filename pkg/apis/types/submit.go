@@ -174,8 +174,9 @@ type SubmitSyncCodeArgs struct {
 }
 
 type TolerationArgs struct {
-	Key      string `yaml:"key,omitempty"`
-	Value    string `yaml:"value,omitempty"`
-	Operator string `yaml:"operator,omitempty"`
-	Effect   string `yaml:"effect,omitempty"`
+	Key                string `yaml:"key,omitempty"`
+	Value              string `yaml:"value,omitempty"`
+	Operator           string `yaml:"operator,omitempty"`
+	Effect             string `yaml:"effect,omitempty"`
+	TolerationSeconds  *int64 `yaml:"tolerationSeconds,omitempty"`
 }

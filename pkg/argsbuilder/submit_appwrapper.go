@@ -342,13 +342,10 @@ func (s *SubmitAppWrapperJobArgsBuilder) setAppWrapperAnnotations() error {
 		s.args.Annotations = map[string]string{}
 	}
 
-	// Add Kueue queue name as a label (Kueue uses labels, not annotations)
-	if s.args.KueueQueueName != "" {
-		if s.args.Labels == nil {
-			s.args.Labels = map[string]string{}
-		}
-		s.args.Labels["kueue.x-k8s.io/queue-name"] = s.args.KueueQueueName
-	}
+	// Note: kueueQueueName is passed to Helm as a separate value (.Values.kueueQueueName)
+	// and the Helm template only adds kueue.x-k8s.io/queue-name label at the AppWrapper level.
+	// We should NOT add it to s.args.Labels here, as that would cause it to be propagated
+	// to all child resources (Volcano Job, Pod templates) via .Values.labels.
 
 	// Add AppWrapper fault tolerance configurations as annotations
 	annotationPrefix := "workload.codeflare.dev.appwrapper/"

@@ -302,6 +302,11 @@ func (st *VolcanoJobTrainer) GetTrainingJob(name, namespace string) (TrainingJob
 	if err != nil {
 		return nil, err
 	}
+	// Skip Volcano Jobs that are managed by AppWrapper
+	// These jobs have the "workload.codeflare.dev/appwrapper" label
+	if _, ok := volcanoJob.Labels["workload.codeflare.dev/appwrapper"]; ok {
+		return nil, types.ErrTrainingJobNotFound
+	}
 	if err := CheckJobIsOwnedByTrainer(volcanoJob.Labels); err != nil {
 		return nil, err
 	}
@@ -338,6 +343,11 @@ func (st *VolcanoJobTrainer) ListTrainingJobs(namespace string, allNamespace boo
 	}
 	trainingJobs := []TrainingJob{}
 	for _, job := range jobs {
+		// Skip Volcano Jobs that are managed by AppWrapper
+		// These jobs have the "workload.codeflare.dev/appwrapper" label
+		if _, ok := job.Labels["workload.codeflare.dev/appwrapper"]; ok {
+			continue
+		}
 		// filter pods and find chief pod
 		filterPods, chiefPod := getPodsOfVolcanoJob(job, st, pods)
 		trainingJobs = append(trainingJobs, &VolcanoJob{

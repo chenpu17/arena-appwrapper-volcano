@@ -104,7 +104,7 @@ func (m *ModelArgsBuilder) AddCommandFlags(command *cobra.Command) {
 	command.Flags().StringArrayVarP(&envs, "env", "e", []string{}, "the environment variables")
 	command.Flags().StringArrayVarP(&annotations, "annotation", "a", []string{}, `specify the annotations, usage: "--annotation=key=value" or "--annotation key=value"`)
 	command.Flags().StringArrayVarP(&labels, "label", "l", []string{}, "specify the labels")
-	command.Flags().StringArrayVarP(&tolerations, "toleration", "", []string{}, `tolerate some k8s nodes with taints,usage: "--toleration key=value:effect,operator" or "--toleration all" `)
+	command.Flags().StringArrayVarP(&tolerations, "toleration", "", []string{}, `tolerate some k8s nodes with taints. Formats: "key", "key:effect:operator[:seconds]", "key=value:effect:operator[:seconds]", "key=value:effect,operator" (legacy), or "all". Example: "--toleration dedicated=teamA:NoExecute:Equal:300"`)
 	command.Flags().StringArrayVarP(&selectors, "selector", "", []string{}, `assigning jobs to some k8s particular nodes, usage: "--selector=key=value" or "--selector key=value" `)
 
 	m.AddArgValue("annotation", &annotations).
@@ -284,8 +284,7 @@ func (m *ModelArgsBuilder) setTolerations() error {
 		}
 		tolerationArg, err := parseTolerationString(taintKey)
 		if err != nil {
-			log.Debug(err.Error())
-			continue
+			return fmt.Errorf("invalid --toleration '%s': %v", taintKey, err)
 		}
 		m.args.Tolerations = append(m.args.Tolerations, *tolerationArg)
 	}

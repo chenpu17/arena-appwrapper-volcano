@@ -130,7 +130,7 @@ func (s *SubmitArgsBuilder) AddCommandFlags(command *cobra.Command) {
 	// enable Queue
 	command.Flags().BoolVar(&s.args.EnableQueue, "queue", false, "enables the feature to queue jobs after they are scheduled (Kube-queue needs to be pre-installed https://github.com/kube-queue/kube-queue)")
 	// add option --toleration,its' value will be get from viper
-	command.Flags().StringArrayVar(&tolerations, "toleration", []string{}, `tolerate some k8s nodes with taints,usage: "--toleration key=value:effect,operator" or "--toleration all" `)
+	command.Flags().StringArrayVar(&tolerations, "toleration", []string{}, `tolerate some k8s nodes with taints. Formats: "key", "key:effect:operator[:seconds]", "key=value:effect:operator[:seconds]", "key=value:effect,operator" (legacy), or "all". Example: "--toleration dedicated=teamA:NoExecute:Equal:300"`)
 	// add option --selector,its' value will be get from viper
 	command.Flags().StringArrayVar(&nodeSelectors, "selector", []string{}, `assigning jobs to some k8s particular nodes, usage: "--selector=key=value" or "--selector key=value" `)
 	// add option --config-file its' value will be get from viper
@@ -577,8 +577,7 @@ func (s *SubmitArgsBuilder) setTolerations() error {
 		}
 		tolerationArg, err := parseTolerationString(taintKey)
 		if err != nil {
-			log.Debug(err.Error())
-			continue
+			return fmt.Errorf("invalid --toleration '%s': %v", taintKey, err)
 		}
 		s.args.Tolerations = append(s.args.Tolerations, *tolerationArg)
 	}
