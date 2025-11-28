@@ -144,6 +144,61 @@ arena delete my-job --type appwrapperjob
 - `appwrapper.1.yaml` - 完整的 AppWrapper + Volcano Job 示例
 - `cli.1.md` - CLI 使用指南和参数对照表
 
+### 架构说明：为什么选择 Volcano Job 而不是 PyTorchJob
+
+本项目支持两种内部作业类型：`--inner-type pytorch` 和 `--inner-type volcano`。对于需要**昇腾超节点亲和性**的场景，必须使用 Volcano Job。
+
+#### 技术原因
+
+`networkTopology`（超节点亲和）是 Volcano Job CRD 的专有字段：
+
+```yaml
+# Volcano Job - 支持 networkTopology ✅
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+spec:
+  networkTopology:           # Volcano Job 级别字段
+    mode: hard
+    highestTierAllowed: 1    # 亲和到 HyperNode tier=1
+  minAvailable: 4            # Gang 调度
+```
+
+PyTorchJob (Kubeflow) 没有 `networkTopology` 字段，即使使用 Volcano 调度器也无法获得此能力。
+
+#### 功能对比
+
+| 特性 | `--inner-type volcano` | `--inner-type pytorch` |
+|-----|------------------------|------------------------|
+| 超节点亲和 (networkTopology) | ✅ 原生支持 | ❌ 不支持 |
+| Gang 调度 (minAvailable) | ✅ 原生支持 | ⚠️ 需要额外 PodGroup |
+| 分区策略 (partitionPolicy) | ✅ 原生支持 | ❌ 不支持 |
+| 分布式环境变量 | ✅ 模板自动配置 | ✅ Kubeflow 自动配置 |
+| Kueue 配额管理 | ✅ 通过 AppWrapper | ✅ 通过 AppWrapper |
+
+#### 推荐选择
+
+| 场景 | 推荐 |
+|-----|------|
+| 昇腾 NPU + 超节点亲和 | `--inner-type volcano` |
+| 需要 Gang 调度 | `--inner-type volcano` |
+| 已有 Kubeflow 生态，无特殊调度需求 | `--inner-type pytorch` |
+
+#### 架构图
+
+```
+Kueue (配额管理)
+    ↓ 通过 suspend 字段控制准入
+AppWrapper (故障容错)
+    ↓ 解决 Kueue 与 Volcano 的兼容问题
+Volcano Job (推荐用于昇腾场景)
+    ↓ 支持 networkTopology, minAvailable, partitionPolicy
+Volcano Scheduler
+    ↓ 超节点亲和调度
+Pods (昇腾 NPU 节点)
+```
+
+> **注意**：AppWrapper 是 Kueue 和 Volcano 之间的桥梁。Volcano 调度器不支持 `suspend` 字段，而 Kueue 需要通过 `suspend` 控制作业准入。AppWrapper 支持 `suspend`，解决了这一兼容性问题。
+
 ---
 
 ## English Documentation
@@ -281,6 +336,61 @@ arena delete my-job --type appwrapperjob
 For more examples, see [samples/appwrapper](samples/appwrapper/):
 - `appwrapper.1.yaml` - Complete AppWrapper + Volcano Job example
 - `cli.1.md` - CLI guide with YAML-to-CLI parameter mapping
+
+### Architecture: Why Volcano Job over PyTorchJob
+
+This project supports two inner job types: `--inner-type pytorch` and `--inner-type volcano`. For scenarios requiring **Ascend HyperNode affinity**, Volcano Job is required.
+
+#### Technical Reason
+
+`networkTopology` (HyperNode affinity) is a Volcano Job CRD-specific field:
+
+```yaml
+# Volcano Job - supports networkTopology ✅
+apiVersion: batch.volcano.sh/v1alpha1
+kind: Job
+spec:
+  networkTopology:           # Volcano Job level field
+    mode: hard
+    highestTierAllowed: 1    # Affinity to HyperNode tier=1
+  minAvailable: 4            # Gang scheduling
+```
+
+PyTorchJob (Kubeflow) does not have the `networkTopology` field. Even with Volcano scheduler, this capability is unavailable.
+
+#### Feature Comparison
+
+| Feature | `--inner-type volcano` | `--inner-type pytorch` |
+|---------|------------------------|------------------------|
+| HyperNode affinity (networkTopology) | ✅ Native support | ❌ Not supported |
+| Gang scheduling (minAvailable) | ✅ Native support | ⚠️ Requires PodGroup |
+| Partition policy (partitionPolicy) | ✅ Native support | ❌ Not supported |
+| Distributed env vars | ✅ Template configured | ✅ Kubeflow configured |
+| Kueue quota management | ✅ Via AppWrapper | ✅ Via AppWrapper |
+
+#### Recommendation
+
+| Scenario | Recommended |
+|----------|-------------|
+| Ascend NPU + HyperNode affinity | `--inner-type volcano` |
+| Gang scheduling required | `--inner-type volcano` |
+| Existing Kubeflow ecosystem, no special scheduling | `--inner-type pytorch` |
+
+#### Architecture Diagram
+
+```
+Kueue (Quota Management)
+    ↓ Controls admission via suspend field
+AppWrapper (Fault Tolerance)
+    ↓ Bridges Kueue and Volcano compatibility
+Volcano Job (Recommended for Ascend)
+    ↓ Supports networkTopology, minAvailable, partitionPolicy
+Volcano Scheduler
+    ↓ HyperNode affinity scheduling
+Pods (Ascend NPU Nodes)
+```
+
+> **Note**: AppWrapper bridges Kueue and Volcano. Volcano scheduler doesn't support the `suspend` field, while Kueue requires `suspend` for admission control. AppWrapper supports `suspend`, resolving this compatibility issue.
 
 ---
 
