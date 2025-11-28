@@ -89,6 +89,78 @@ arena submit appwrapperjob \
   "python train.py"
 ```
 
+#### 华为昇腾 910C 超节点分布式训练（完整示例）
+
+以下是一个完整的 4 节点 × 16 卡（共 64 张 NPU）的昇腾 910C 分布式训练任务示例：
+
+```bash
+arena submit appwrapperjob \
+    --name ascend-910c-training \
+    --namespace ai-training \
+    --image swr.cn-north-4.myhuaweicloud.com/your-org/training:latest \
+    --inner-type volcano \
+    --replicas 4 \
+    --min-available 4 \
+    --device "huawei.com/Ascend910C=16" \
+    --kueue-queue team-a-queue \
+    --master-port 29500 \
+    --ring-controller ascend-910c \
+    --network-topology-mode hard \
+    --highest-tier-allowed 2 \
+    --total-partitions 2 \
+    --partition-size 2 \
+    --partition-topology-mode hard \
+    --partition-highest-tier 1 \
+    --cpu 192 \
+    --memory 768Gi \
+    --share-memory 64Gi \
+    --warmup-grace-period 15m \
+    --failure-grace-period 5m \
+    --toleration "huawei.com/Ascend910C:NoSchedule:Exists" \
+    --toleration "node.kubernetes.io/not-ready:NoExecute:Exists:300" \
+    --toleration "node.kubernetes.io/unreachable:NoExecute:Exists:300" \
+    'torchrun --nnodes=4 --nproc_per_node=16 --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train.py'
+```
+
+**参数详解：**
+
+| 分类 | 参数 | 值 | 说明 |
+|------|------|-----|------|
+| **基础** | `--name` | `ascend-910c-training` | 任务名称 |
+| | `--namespace` | `ai-training` | Kubernetes 命名空间 |
+| | `--image` | `swr.cn-north-4...` | 训练容器镜像 |
+| | `--inner-type` | `volcano` | 内部使用 Volcano Job |
+| **分布式** | `--replicas` | `4` | 4 个训练节点 |
+| | `--min-available` | `4` | Gang 调度要求全部就绪 |
+| | `--master-port` | `29500` | PyTorch 分布式通信端口 |
+| **NPU** | `--device` | `huawei.com/Ascend910C=16` | 每节点 16 张 910C 卡 |
+| **Kueue** | `--kueue-queue` | `team-a-queue` | 资源配额队列 |
+| **拓扑亲和** | `--ring-controller` | `ascend-910c` | 匹配 910C 节点标签 |
+| | `--network-topology-mode` | `hard` | 强制拓扑约束 |
+| | `--highest-tier-allowed` | `2` | 允许超节点内调度 |
+| **分区策略** | `--total-partitions` | `2` | 分为 2 个分区 |
+| | `--partition-size` | `2` | 每分区 2 个 Pod |
+| | `--partition-topology-mode` | `hard` | 分区内强制拓扑 |
+| | `--partition-highest-tier` | `1` | 分区内同机柜 |
+| **资源** | `--cpu` | `192` | 每 Pod 192 核 |
+| | `--memory` | `768Gi` | 每 Pod 768GB 内存 |
+| | `--share-memory` | `64Gi` | HCCL 共享内存 |
+| **容错** | `--warmup-grace-period` | `15m` | 预热宽限 15 分钟 |
+| | `--failure-grace-period` | `5m` | 失败宽限 5 分钟 |
+| **容忍** | `--toleration` | `huawei.com/Ascend910C:...` | 允许调度到 910C 节点 |
+| | `--toleration` | `node.kubernetes.io/not-ready:...` | 节点故障容忍 300 秒 |
+
+**网络拓扑层级说明：**
+
+| 层级 (Tier) | 含义 | 网络延迟 |
+|------------|------|---------|
+| 0 | 同一节点内 | 最低 |
+| 1 | 同一机柜内 | 低 |
+| 2 | 同一超节点内 | 中等 |
+| 3+ | 跨超节点 | 较高 |
+
+> **提示**：不同集群的设备资源名称可能不同，请通过 `kubectl describe node <node-name>` 确认实际资源名称（如 `huawei.com/Ascend910C`、`huawei.com/Ascend910B` 等）。
+
 ### 参数说明
 
 #### AppWrapper 参数
@@ -307,6 +379,78 @@ arena submit appwrapperjob \
   --partition-highest-tier 1 \
   "python train.py"
 ```
+
+#### Huawei Ascend 910C HyperNode Distributed Training (Complete Example)
+
+Here is a complete example for 4 nodes × 16 NPUs (64 NPUs total) distributed training on Ascend 910C:
+
+```bash
+arena submit appwrapperjob \
+    --name ascend-910c-training \
+    --namespace ai-training \
+    --image swr.cn-north-4.myhuaweicloud.com/your-org/training:latest \
+    --inner-type volcano \
+    --replicas 4 \
+    --min-available 4 \
+    --device "huawei.com/Ascend910C=16" \
+    --kueue-queue team-a-queue \
+    --master-port 29500 \
+    --ring-controller ascend-910c \
+    --network-topology-mode hard \
+    --highest-tier-allowed 2 \
+    --total-partitions 2 \
+    --partition-size 2 \
+    --partition-topology-mode hard \
+    --partition-highest-tier 1 \
+    --cpu 192 \
+    --memory 768Gi \
+    --share-memory 64Gi \
+    --warmup-grace-period 15m \
+    --failure-grace-period 5m \
+    --toleration "huawei.com/Ascend910C:NoSchedule:Exists" \
+    --toleration "node.kubernetes.io/not-ready:NoExecute:Exists:300" \
+    --toleration "node.kubernetes.io/unreachable:NoExecute:Exists:300" \
+    'torchrun --nnodes=4 --nproc_per_node=16 --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train.py'
+```
+
+**Parameter Details:**
+
+| Category | Parameter | Value | Description |
+|----------|-----------|-------|-------------|
+| **Basic** | `--name` | `ascend-910c-training` | Job name |
+| | `--namespace` | `ai-training` | Kubernetes namespace |
+| | `--image` | `swr.cn-north-4...` | Training container image |
+| | `--inner-type` | `volcano` | Use Volcano Job internally |
+| **Distributed** | `--replicas` | `4` | 4 training nodes |
+| | `--min-available` | `4` | Gang scheduling requires all ready |
+| | `--master-port` | `29500` | PyTorch distributed communication port |
+| **NPU** | `--device` | `huawei.com/Ascend910C=16` | 16 × 910C NPUs per node |
+| **Kueue** | `--kueue-queue` | `team-a-queue` | Resource quota queue |
+| **Topology** | `--ring-controller` | `ascend-910c` | Match 910C node labels |
+| | `--network-topology-mode` | `hard` | Enforce topology constraints |
+| | `--highest-tier-allowed` | `2` | Allow scheduling within HyperNode |
+| **Partition** | `--total-partitions` | `2` | Split into 2 partitions |
+| | `--partition-size` | `2` | 2 Pods per partition |
+| | `--partition-topology-mode` | `hard` | Enforce partition topology |
+| | `--partition-highest-tier` | `1` | Same rack within partition |
+| **Resources** | `--cpu` | `192` | 192 cores per Pod |
+| | `--memory` | `768Gi` | 768GB memory per Pod |
+| | `--share-memory` | `64Gi` | Shared memory for HCCL |
+| **Fault Tolerance** | `--warmup-grace-period` | `15m` | 15 min warmup grace |
+| | `--failure-grace-period` | `5m` | 5 min failure grace |
+| **Tolerations** | `--toleration` | `huawei.com/Ascend910C:...` | Allow scheduling on 910C nodes |
+| | `--toleration` | `node.kubernetes.io/not-ready:...` | Tolerate node failures for 300s |
+
+**Network Topology Tiers:**
+
+| Tier | Meaning | Network Latency |
+|------|---------|-----------------|
+| 0 | Within same node | Lowest |
+| 1 | Within same rack | Low |
+| 2 | Within same HyperNode | Medium |
+| 3+ | Across HyperNodes | Higher |
+
+> **Tip**: Device resource names may vary across clusters. Use `kubectl describe node <node-name>` to verify actual resource names (e.g., `huawei.com/Ascend910C`, `huawei.com/Ascend910B`, etc.).
 
 ### Parameters
 
