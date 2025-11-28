@@ -6,8 +6,8 @@
 |------------|------------|
 | 上游项目 / Upstream | [kubeflow/arena](https://github.com/kubeflow/arena) |
 | Fork 基准版本 / Base Version | **v0.15.3** |
-| Fork 基准 Commit | `deef4785` (Fix: install script does not work due to CRD files renaming #1391) |
-| Fork 日期 / Fork Date | 2024-11 |
+| Fork 基准 Commit | `deef4785` (2025-11-26, Fix: install script does not work due to CRD files renaming #1391) |
+| Fork 日期 / Fork Date | 2025-11-27 |
 | 本项目仓库 / This Repository | [chenpu17/arena-appwrapper-volcano](https://github.com/chenpu17/arena-appwrapper-volcano) |
 
 ---
@@ -57,22 +57,22 @@
 
 ## 提交历史 / Commit History
 
-| Commit | 类型 / Type | 描述 / Description |
-|--------|------------|-------------------|
-| `39cf393c` | feat | 添加 AppWrapper job 支持，集成 Volcano Job |
-| `a5dafc86` | fix | 修复 Volcano Job 分布式训练问题，添加文档 |
-| `21660228` | docs | 添加 AppWrapper 示例文件 |
-| `31233431` | refactor | 将示例移动到 samples 目录 |
-| `4fc2ba49` | docs | 重写 README，突出 AppWrapper + Volcano 特性 |
-| `ce7b5caf` | docs | 添加修改报告 |
-| `717275da` | docs | README 关联修改报告 |
-| `7f06f867` | fix | 修复 Kubernetes not-found 错误转换 |
-| `75f635c0` | fix | 移除重复的 schedulerName 字段 |
-| `1b84f589` | docs | 添加安装指南 |
-| `59baac6e` | docs | 区分编译环境和运行环境要求 |
-| `2df2ad64` | docs | 添加常见问题排查章节 |
-| `137329f3` | docs | 添加架构说明：Volcano Job vs PyTorchJob |
-| `24188eba` | docs | 改进架构图和时序图 |
+| Commit | 日期 / Date | 类型 / Type | 描述 / Description |
+|--------|------------|------------|-------------------|
+| `39cf393c` | 2025-11-27 | feat | 添加 AppWrapper job 支持，集成 Volcano Job |
+| `a5dafc86` | 2025-11-27 | fix | 修复 Volcano Job 分布式训练问题，添加文档 |
+| `21660228` | 2025-11-27 | docs | 添加 AppWrapper 示例文件 |
+| `31233431` | 2025-11-27 | refactor | 将示例移动到 samples 目录 |
+| `4fc2ba49` | 2025-11-27 | docs | 重写 README，突出 AppWrapper + Volcano 特性 |
+| `ce7b5caf` | 2025-11-27 | docs | 添加修改报告 |
+| `717275da` | 2025-11-27 | docs | README 关联修改报告 |
+| `7f06f867` | 2025-11-27 | fix | 修复 Kubernetes not-found 错误转换 |
+| `75f635c0` | 2025-11-27 | fix | 移除重复的 schedulerName 字段 |
+| `1b84f589` | 2025-11-27 | docs | 添加安装指南 |
+| `59baac6e` | 2025-11-27 | docs | 区分编译环境和运行环境要求 |
+| `2df2ad64` | 2025-11-27 | docs | 添加常见问题排查章节 |
+| `137329f3` | 2025-11-28 | docs | 添加架构说明：Volcano Job vs PyTorchJob |
+| `24188eba` | 2025-11-28 | docs | 改进架构图和时序图 |
 
 ---
 
