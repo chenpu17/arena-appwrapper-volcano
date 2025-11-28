@@ -186,15 +186,41 @@ PyTorchJob (Kubeflow) 没有 `networkTopology` 字段，即使使用 Volcano 调
 #### 架构图
 
 ```
-Kueue (配额管理)
-    ↓ 通过 suspend 字段控制准入
-AppWrapper (故障容错)
-    ↓ 解决 Kueue 与 Volcano 的兼容问题
-Volcano Job (推荐用于昇腾场景)
-    ↓ 支持 networkTopology, minAvailable, partitionPolicy
+Arena (CLI)
+    │
+    │ 创建
+    ↓
+AppWrapper ←───────── Kueue (监听 + 控制 suspend)
+    │                    │
+    │                    │ 1. 检查 LocalQueue 配额
+    │                    │ 2. 配额足够 → suspend: false
+    │                    │ 3. 配额不足 → suspend: true (排队)
+    │
+    │ suspend=false 时创建
+    ↓
+Volcano Job
+    │ 支持 networkTopology, minAvailable, partitionPolicy
+    │
+    │ 调度
+    ↓
 Volcano Scheduler
-    ↓ 超节点亲和调度
+    │ 超节点亲和调度
+    ↓
 Pods (昇腾 NPU 节点)
+```
+
+#### 时序图
+
+```
+User        Arena       K8s API      Kueue        AppWrapper    Volcano Job
+  │           │            │           │              │              │
+  │──submit──→│            │           │              │              │
+  │           │──create───→│           │              │              │
+  │           │            │──watch───→│              │              │
+  │           │            │           │──check quota─│              │
+  │           │            │           │──unsuspend──→│              │
+  │           │            │           │              │──create─────→│
+  │           │            │           │              │              │──schedule→Pods
 ```
 
 > **注意**：AppWrapper 是 Kueue 和 Volcano 之间的桥梁。Volcano 调度器不支持 `suspend` 字段，而 Kueue 需要通过 `suspend` 控制作业准入。AppWrapper 支持 `suspend`，解决了这一兼容性问题。
@@ -379,15 +405,41 @@ PyTorchJob (Kubeflow) does not have the `networkTopology` field. Even with Volca
 #### Architecture Diagram
 
 ```
-Kueue (Quota Management)
-    ↓ Controls admission via suspend field
-AppWrapper (Fault Tolerance)
-    ↓ Bridges Kueue and Volcano compatibility
-Volcano Job (Recommended for Ascend)
-    ↓ Supports networkTopology, minAvailable, partitionPolicy
+Arena (CLI)
+    │
+    │ creates
+    ↓
+AppWrapper ←───────── Kueue (watches + controls suspend)
+    │                    │
+    │                    │ 1. Check LocalQueue quota
+    │                    │ 2. Quota available → suspend: false
+    │                    │ 3. Quota insufficient → suspend: true (queued)
+    │
+    │ creates when suspend=false
+    ↓
+Volcano Job
+    │ Supports networkTopology, minAvailable, partitionPolicy
+    │
+    │ schedules
+    ↓
 Volcano Scheduler
-    ↓ HyperNode affinity scheduling
+    │ HyperNode affinity scheduling
+    ↓
 Pods (Ascend NPU Nodes)
+```
+
+#### Sequence Diagram
+
+```
+User        Arena       K8s API      Kueue        AppWrapper    Volcano Job
+  │           │            │           │              │              │
+  │──submit──→│            │           │              │              │
+  │           │──create───→│           │              │              │
+  │           │            │──watch───→│              │              │
+  │           │            │           │──check quota─│              │
+  │           │            │           │──unsuspend──→│              │
+  │           │            │           │              │──create─────→│
+  │           │            │           │              │              │──schedule→Pods
 ```
 
 > **Note**: AppWrapper bridges Kueue and Volcano. Volcano scheduler doesn't support the `suspend` field, while Kueue requires `suspend` for admission control. AppWrapper supports `suspend`, resolving this compatibility issue.
