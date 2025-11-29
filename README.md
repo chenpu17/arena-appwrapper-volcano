@@ -129,6 +129,7 @@ arena submit appwrapperjob \
     --inner-type volcano \
     --replicas 4 \
     --min-available 4 \
+    --nproc-per-node 16 \
     --device "huawei.com/Ascend910C=16" \
     --kueue-queue team-a-queue \
     --master-port 29500 \
@@ -147,7 +148,7 @@ arena submit appwrapperjob \
     --toleration "huawei.com/Ascend910C:NoSchedule:Exists" \
     --toleration "node.kubernetes.io/not-ready:NoExecute:Exists:300" \
     --toleration "node.kubernetes.io/unreachable:NoExecute:Exists:300" \
-    'torchrun --nnodes=4 --nproc_per_node=16 --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train.py'
+    'torchrun --nnodes=$NNODES --nproc_per_node=$NPROC_PER_NODE --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train.py'
 ```
 
 **参数详解：**
@@ -160,6 +161,7 @@ arena submit appwrapperjob \
 | | `--inner-type` | `volcano` | 内部使用 Volcano Job |
 | **分布式** | `--replicas` | `4` | 4 个训练节点 |
 | | `--min-available` | `4` | Gang 调度要求全部就绪 |
+| | `--nproc-per-node` | `16` | 每节点进程数（GPU/NPU 数量） |
 | | `--master-port` | `29500` | PyTorch 分布式通信端口 |
 | **NPU** | `--device` | `huawei.com/Ascend910C=16` | 每节点 16 张 910C 卡 |
 | **Kueue** | `--kueue-queue` | `team-a-queue` | 资源配额队列 |
@@ -621,6 +623,7 @@ arena submit appwrapperjob \
     --inner-type volcano \
     --replicas 4 \
     --min-available 4 \
+    --nproc-per-node 16 \
     --device "huawei.com/Ascend910C=16" \
     --kueue-queue team-a-queue \
     --master-port 29500 \
@@ -639,7 +642,7 @@ arena submit appwrapperjob \
     --toleration "huawei.com/Ascend910C:NoSchedule:Exists" \
     --toleration "node.kubernetes.io/not-ready:NoExecute:Exists:300" \
     --toleration "node.kubernetes.io/unreachable:NoExecute:Exists:300" \
-    'torchrun --nnodes=4 --nproc_per_node=16 --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train.py'
+    'torchrun --nnodes=$NNODES --nproc_per_node=$NPROC_PER_NODE --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK train.py'
 ```
 
 **Parameter Details:**
