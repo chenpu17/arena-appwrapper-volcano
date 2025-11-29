@@ -203,6 +203,7 @@ arena submit appwrapperjob \
 | `--task-name` | `worker` | 任务名称 |
 | `--master-port` | `23456` | 分布式训练通信端口 |
 | `--max-retry` | `10000` | 任务最大重试次数 |
+| `--use-svc-plugin` | `true` | 使用 Volcano svc 插件（需 >= 1.8），设为 `false` 回退到手动 Headless Service |
 | `--ring-controller` | - | 环形控制器标签（如 `ascend-1980`） |
 | `--network-topology-mode` | - | 网络拓扑模式：`hard` 或 `soft` |
 | `--highest-tier-allowed` | `0` | 最高网络拓扑层级 |
@@ -907,14 +908,17 @@ kubectl get pod -l release=<job-name> -o jsonpath='{range .items[*]}{.metadata.n
 ```
 
 **解决方案 / Solution:**
-1. 确保使用最新版本代码（已启用 Volcano svc 插件）
-2. 确保 Volcano 版本 >= 1.8
-3. 删除旧任务后重新提交
 
+**方案 A**：使用 Volcano >= 1.8（推荐）
 ```bash
 arena delete <job-name> --type appwrapperjob
-# 重新编译安装最新代码后提交
-arena submit appwrapperjob ...
+arena submit appwrapperjob --inner-type volcano ...
+```
+
+**方案 B**：回退到手动 Headless Service（适用于旧版 Volcano）
+```bash
+arena delete <job-name> --type appwrapperjob
+arena submit appwrapperjob --inner-type volcano --use-svc-plugin=false ...
 ```
 
 ---
