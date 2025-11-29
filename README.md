@@ -178,6 +178,65 @@ arena submit appwrapperjob \
 
 > **提示**：不同集群的设备资源名称可能不同，请通过 `kubectl describe node <node-name>` 确认实际资源名称（如 `huawei.com/Ascend910C`、`huawei.com/Ascend910B` 等）。
 
+#### 实际验证示例（Swift SFT 训练）
+
+以下是经过实际验证的 2 节点 × 16 卡分布式训练示例，使用 Swift 框架进行 SFT 微调：
+
+```bash
+arena submit appwrapperjob \
+    --name ascend-910c-training \
+    --namespace default \
+    --image swr.cn-southwest-2.myhuaweicloud.com/huawei-test/swift:3.0 \
+    --inner-type volcano \
+    --replicas 2 \
+    --min-available 2 \
+    --kueue-queue team-a-queue \
+    --master-port 29500 \
+    --ring-controller ascend-910c \
+    --network-topology-mode hard \
+    --highest-tier-allowed 2 \
+    --total-partitions 2 \
+    --partition-size 1 \
+    --partition-topology-mode hard \
+    --partition-highest-tier 1 \
+    --device=huawei.com/ascend-1980=16 \
+    --share-memory 1000Gi \
+    --warmup-grace-period 15m \
+    --failure-grace-period 5m \
+    --toleration "huawei.com/Ascend910C:NoSchedule:Exists" \
+    --toleration "node.kubernetes.io/not-ready:NoExecute:Exists:300" \
+    --toleration "node.kubernetes.io/unreachable:NoExecute:Exists:300" \
+    --image-pull-policy=Always \
+    --data-dir=/usr/local/Ascend/driver \
+    --data-dir=/usr/local/Ascend/add-ons \
+    --data-dir=/etc/localtime \
+    --data-dir=/mnt/sfs_turbo/ \
+    --data-dir=/etc/ascend_install.inf \
+    --data-dir=/usr/local/dcmi \
+    --data-dir=/usr/local/sbin/npu-smi \
+    "source /usr/local/Ascend/ascend-toolkit/set_env.sh; \
+    swift sft \
+    --nnodes=\$WORLD_SIZE \
+    --nproc_per_node=16 \
+    --master_addr=\$MASTER_ADDR \
+    --master_port=\$MASTER_PORT \
+    --node_rank=\$RANK \
+    --model /mnt/sfs_turbo/model/Qwen2.5-VL-3B-Instruct \
+    --train_type full \
+    --dataset /mnt/sfs_turbo/datasets \
+    --output_dir /mnt/sfs_turbo/output \
+    --deepspeed zero1"
+```
+
+**关键点说明：**
+
+| 项目 | 说明 |
+|-----|------|
+| **环境变量** | 使用 Arena 自动注入的 `$MASTER_ADDR`、`$MASTER_PORT`、`$WORLD_SIZE`、`$RANK` |
+| **分布式参数** | `--node_rank=$RANK` 确保每个节点知道自己的编号 |
+| **HostPath 挂载** | `--data-dir` 挂载昇腾驱动和工具目录 |
+| **共享内存** | `--share-memory 1000Gi` 用于 HCCL 通信 |
+
 ### 参数说明
 
 #### AppWrapper 参数
@@ -597,6 +656,65 @@ arena submit appwrapperjob \
 | 3+ | Across HyperNodes | Higher |
 
 > **Tip**: Device resource names may vary across clusters. Use `kubectl describe node <node-name>` to verify actual resource names (e.g., `huawei.com/Ascend910C`, `huawei.com/Ascend910B`, etc.).
+
+#### Verified Example (Swift SFT Training)
+
+Here is a verified 2-node × 16-NPU distributed training example using the Swift framework for SFT fine-tuning:
+
+```bash
+arena submit appwrapperjob \
+    --name ascend-910c-training \
+    --namespace default \
+    --image swr.cn-southwest-2.myhuaweicloud.com/huawei-test/swift:3.0 \
+    --inner-type volcano \
+    --replicas 2 \
+    --min-available 2 \
+    --kueue-queue team-a-queue \
+    --master-port 29500 \
+    --ring-controller ascend-910c \
+    --network-topology-mode hard \
+    --highest-tier-allowed 2 \
+    --total-partitions 2 \
+    --partition-size 1 \
+    --partition-topology-mode hard \
+    --partition-highest-tier 1 \
+    --device=huawei.com/ascend-1980=16 \
+    --share-memory 1000Gi \
+    --warmup-grace-period 15m \
+    --failure-grace-period 5m \
+    --toleration "huawei.com/Ascend910C:NoSchedule:Exists" \
+    --toleration "node.kubernetes.io/not-ready:NoExecute:Exists:300" \
+    --toleration "node.kubernetes.io/unreachable:NoExecute:Exists:300" \
+    --image-pull-policy=Always \
+    --data-dir=/usr/local/Ascend/driver \
+    --data-dir=/usr/local/Ascend/add-ons \
+    --data-dir=/etc/localtime \
+    --data-dir=/mnt/sfs_turbo/ \
+    --data-dir=/etc/ascend_install.inf \
+    --data-dir=/usr/local/dcmi \
+    --data-dir=/usr/local/sbin/npu-smi \
+    "source /usr/local/Ascend/ascend-toolkit/set_env.sh; \
+    swift sft \
+    --nnodes=\$WORLD_SIZE \
+    --nproc_per_node=16 \
+    --master_addr=\$MASTER_ADDR \
+    --master_port=\$MASTER_PORT \
+    --node_rank=\$RANK \
+    --model /mnt/sfs_turbo/model/Qwen2.5-VL-3B-Instruct \
+    --train_type full \
+    --dataset /mnt/sfs_turbo/datasets \
+    --output_dir /mnt/sfs_turbo/output \
+    --deepspeed zero1"
+```
+
+**Key Points:**
+
+| Item | Description |
+|------|-------------|
+| **Environment Variables** | Uses Arena auto-injected `$MASTER_ADDR`, `$MASTER_PORT`, `$WORLD_SIZE`, `$RANK` |
+| **Distributed Params** | `--node_rank=$RANK` ensures each node knows its rank |
+| **HostPath Mounts** | `--data-dir` mounts Ascend driver and tool directories |
+| **Shared Memory** | `--share-memory 1000Gi` for HCCL communication |
 
 ### Parameters
 
