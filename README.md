@@ -4,7 +4,7 @@
 
 > 本项目是 [Kubeflow Arena](https://github.com/kubeflow/arena) 的增强版分支，新增了对 **AppWrapper** 和 **Volcano Job** 的完整支持，适用于大规模分布式训练场景。
 >
-> **Fork 基准**: Arena v0.15.3 | **代码修改**: 27 文件, 3,634 行 | 详见 [修改报告](MODIFICATION_REPORT.md)
+> **Fork 基准**: Arena v0.15.3 | **代码修改**: 27 文件, 3,640 行 | 详见 [修改报告](MODIFICATION_REPORT.md)
 
 ---
 
@@ -38,8 +38,25 @@ Kubernetes 集群需安装以下组件：
 |------|---------|------|
 | [AppWrapper Operator](https://github.com/project-codeflare/appwrapper) | v1beta2 | 必需 |
 | [Kueue](https://kueue.sigs.k8s.io/) | - | 可选，用于资源配额管理 |
-| [Volcano](https://volcano.sh/) | >= v1.5 | `--inner-type volcano` 时必需 |
+| [Volcano](https://volcano.sh/) | **>= v1.8** | `--inner-type volcano` 时必需 |
 | [Kubeflow Training Operator](https://github.com/kubeflow/training-operator) | - | `--inner-type pytorch` 时必需 |
+
+#### Volcano 配置要求
+
+使用 `--inner-type volcano` 时，需确保：
+
+1. **svc 插件支持**：Volcano Controller 需支持 `svc` 插件（v1.8+ 默认支持）
+2. **RBAC 权限**：Volcano Controller 的 ServiceAccount 需具备 Service/Endpoints 的 create/update 权限（标准安装已包含）
+3. **Job 名称限制**：Job 名称最长 49 字符（DNS 标签限制）
+
+验证 Volcano 安装：
+```bash
+# 检查 Volcano 版本
+kubectl get deployment -n volcano-system volcano-controller -o jsonpath='{.spec.template.spec.containers[0].image}'
+
+# 检查 Controller 是否正常运行
+kubectl get pods -n volcano-system
+```
 
 ### 快速开始
 
@@ -873,6 +890,32 @@ ERRO[0000] failed to create proxied model client: no mlflow service in any names
 **说明 / Note:** 这是可选的 MLflow 集成功能，不影响 AppWrapper 任务提交。可以安全忽略。
 
 This is an optional MLflow integration feature and does not affect AppWrapper job submission. Can be safely ignored.
+
+### 5. DNS 解析失败 / DNS resolution failed
+
+**错误 / Error:**
+```
+[c10d] The IPv6 network addresses of (xxx-worker-0.xxx, 29500) cannot be retrieved (gai error: -2 - Name or service not known)
+```
+
+**原因 / Cause:** Pod 的 hostname 未正确设置，导致分布式训练无法解析 MASTER_ADDR。
+
+**诊断 / Diagnose:**
+```bash
+# 检查 Pod hostname/subdomain
+kubectl get pod -l release=<job-name> -o jsonpath='{range .items[*]}{.metadata.name}: hostname={.spec.hostname}, subdomain={.spec.subdomain}{"\n"}{end}'
+```
+
+**解决方案 / Solution:**
+1. 确保使用最新版本代码（已启用 Volcano svc 插件）
+2. 确保 Volcano 版本 >= 1.8
+3. 删除旧任务后重新提交
+
+```bash
+arena delete <job-name> --type appwrapperjob
+# 重新编译安装最新代码后提交
+arena submit appwrapperjob ...
+```
 
 ---
 

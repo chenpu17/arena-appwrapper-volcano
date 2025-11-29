@@ -14,7 +14,7 @@
 
 ## 代码修改统计 / Code Change Statistics
 
-**总计 / Total: 27 files changed, 3,634 lines inserted**
+**总计 / Total: 27 files changed, 3,640 lines inserted**
 
 ### 按模块分类 / By Module
 
@@ -29,7 +29,7 @@
 | Operators | 2 | 396 | AppWrapper CRD 类型 |
 | Client | 1 | 217 | Kubernetes clientset |
 | Samples | 1 | 80 | 示例文件 |
-| **合计 / Total** | **27** | **3,634** | |
+| **合计 / Total** | **27** | **3,640** | |
 
 ### 详细文件列表 / Detailed File List
 
@@ -88,6 +88,8 @@
 | `f47411f4` | 2025-11-28 | fix | 增强 toleration 解析，支持 tolerationSeconds |
 | `8b5264c7` | 2025-11-28 | docs | 添加昇腾 910C 分布式训练完整示例 |
 | `620842fa` | 2025-11-29 | docs | 添加存储配置指南（PVC/NFS） |
+| `909a6db5` | 2025-11-29 | docs | 更新修改报告统计和提交历史 |
+| `0190c7dd` | 2025-11-29 | fix | 启用 Volcano svc 插件修复 Pod DNS 解析 |
 
 ---
 
