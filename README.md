@@ -958,10 +958,10 @@ arena-kubectl version --client
 ls ~/charts/appwrapperjob  # 或 /charts/appwrapperjob
 
 # 6. 验证 charts 版本 / Verify charts version (重要!)
-# 确保输出包含 "v0.2.0" 和 "svc plugin"
-grep -E "version:|svc plugin" ~/charts/appwrapperjob/Chart.yaml
+# 确保输出包含 "v0.3.0"
+grep -E "version:" ~/charts/appwrapperjob/Chart.yaml
 # 或
-grep "v0.2.0" /charts/appwrapperjob/templates/appwrapper.yaml
+grep "v0.3.0" /charts/appwrapperjob/templates/appwrapper.yaml
 ```
 
 ### 环境要求 / Requirements
@@ -987,18 +987,18 @@ grep "v0.2.0" /charts/appwrapperjob/templates/appwrapper.yaml
 
 ### 0. Charts 版本过旧 / Charts version outdated
 
-**问题 / Problem:** 安装后 charts 仍是旧版本，缺少 svc plugin 支持。
+**问题 / Problem:** 安装后 charts 仍是旧版本，缺少最新功能（svc plugin、NNODES 环境变量等）。
 
 **诊断 / Diagnose:**
 ```bash
 # 检查 charts 版本
 grep "version:" ~/charts/appwrapperjob/Chart.yaml   # 或 /charts/
-# 如果显示 0.1.0，说明是旧版本
-# 如果显示 0.2.0，说明是新版本（包含 svc plugin）
+# 如果显示 0.1.0 或 0.2.0，说明是旧版本
+# 如果显示 0.3.0，说明是最新版本
 
 # 或检查模板文件
 head -1 ~/charts/appwrapperjob/templates/appwrapper.yaml
-# 新版本应显示: {{- /* Chart: appwrapperjob v0.2.0 - Volcano svc plugin support */ -}}
+# 最新版本应显示: {{- /* Chart: appwrapperjob v0.3.0 - NNODES + correct WORLD_SIZE */ -}}
 ```
 
 **原因 / Cause:** 安装包是基于旧代码构建的，charts 没有更新。
