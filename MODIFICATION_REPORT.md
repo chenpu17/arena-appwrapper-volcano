@@ -14,35 +14,43 @@
 
 ## 代码修改统计 / Code Change Statistics
 
-**总计 / Total: 18 files changed, 3,287 lines inserted**
+**总计 / Total: 27 files changed, 3,634 lines inserted**
 
 ### 按模块分类 / By Module
 
 | 模块 / Module | 文件数 / Files | 行数 / Lines | 说明 / Description |
 |--------------|---------------|-------------|-------------------|
-| Helm Chart | 5 | 1,251 | AppWrapper + Volcano Job 模板 |
-| API Types | 3 | 320 | 类型定义与 Builder |
-| ArgsBuilder | 1 | 394 | 参数构建与验证 |
-| Training | 3 | 518 | 训练器与提交逻辑 |
+| Helm Chart | 5 | 1,257 | AppWrapper + Volcano Job 模板 |
+| API Types | 4 | 329 | 类型定义与 Builder |
+| ArgsBuilder | 7 | 668 | 参数构建与验证（含 toleration 增强） |
+| Training | 4 | 528 | 训练器与提交逻辑 |
 | Commands | 2 | 75 | CLI 命令 |
 | K8s Accesser | 1 | 3 | 常量定义 |
 | Operators | 2 | 396 | AppWrapper CRD 类型 |
 | Client | 1 | 217 | Kubernetes clientset |
-| **合计 / Total** | **18** | **3,287** | |
+| Samples | 1 | 80 | 示例文件 |
+| **合计 / Total** | **27** | **3,634** | |
 
 ### 详细文件列表 / Detailed File List
 
 ```
  charts/appwrapperjob/Chart.yaml                    |    5 +
  charts/appwrapperjob/templates/_helpers.tpl        |   32 +
- charts/appwrapperjob/templates/appwrapper.yaml     | 1049 +
+ charts/appwrapperjob/templates/appwrapper.yaml     | 1055 +
  charts/appwrapperjob/templates/headless-service.yaml |   28 +
  charts/appwrapperjob/values.yaml                   |  137 +
  pkg/apis/arenaclient/training_client.go            |    3 +
  pkg/apis/training/appwrapperjob_builder.go         |  507 +
+ pkg/apis/types/submit.go                           |    9 +-
  pkg/apis/types/submit_appwrapper.go                |  133 +
  pkg/apis/types/training.go                         |    7 +
- pkg/argsbuilder/submit_appwrapper.go               |  394 +
+ pkg/argsbuilder/evaluatejob.go                     |    5 +-
+ pkg/argsbuilder/model.go                           |    5 +-
+ pkg/argsbuilder/serving.go                         |    5 +-
+ pkg/argsbuilder/submit.go                          |    5 +-
+ pkg/argsbuilder/submit_appwrapper.go               |  391 +
+ pkg/argsbuilder/update_serving.go                  |    5 +-
+ pkg/argsbuilder/util.go                            |  252 +-
  pkg/commands/training/submit.go                    |    2 +
  pkg/commands/training/submit_appwrapperjob.go      |   73 +
  pkg/k8saccesser/const.go                           |    3 +
@@ -51,6 +59,8 @@
  pkg/training/submit_appwrapper.go                  |   64 +
  pkg/training/trainer.go                            |    1 +
  pkg/training/trainer_appwrapper.go                 |  453 +
+ pkg/training/trainer_volcano.go                    |   10 +
+ samples/appwrapper/appwrapper.1.yaml               |   80 +
 ```
 
 ---
@@ -73,6 +83,11 @@
 | `2df2ad64` | 2025-11-27 | docs | 添加常见问题排查章节 |
 | `137329f3` | 2025-11-28 | docs | 添加架构说明：Volcano Job vs PyTorchJob |
 | `24188eba` | 2025-11-28 | docs | 改进架构图和时序图 |
+| `788783d2` | 2025-11-28 | docs | 更新修改报告：架构图和完整提交历史 |
+| `56950611` | 2025-11-28 | docs | 修正 fork 日期（2024→2025），添加详细日期 |
+| `f47411f4` | 2025-11-28 | fix | 增强 toleration 解析，支持 tolerationSeconds |
+| `8b5264c7` | 2025-11-28 | docs | 添加昇腾 910C 分布式训练完整示例 |
+| `620842fa` | 2025-11-29 | docs | 添加存储配置指南（PVC/NFS） |
 
 ---
 
