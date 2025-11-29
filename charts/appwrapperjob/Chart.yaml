@@ -1,5 +1,8 @@
 apiVersion: v1
-appVersion: "1.0"
-description: A Helm chart for AppWrapper wrapping PyTorchJob
+appVersion: "1.1"
+description: A Helm chart for AppWrapper wrapping PyTorchJob or Volcano Job
 name: appwrapperjob
-version: 0.1.0
+# Version History:
+# 0.1.0 - Initial release
+# 0.2.0 - Added Volcano svc plugin support for DNS resolution (requires Volcano >= 1.8)
+version: 0.2.0

@@ -812,6 +812,12 @@ sudo ln -s $(which kubectl) /usr/local/bin/arena-kubectl
 arena version
 arena-kubectl version --client
 ls ~/charts/appwrapperjob  # 或 /charts/appwrapperjob
+
+# 6. 验证 charts 版本 / Verify charts version (重要!)
+# 确保输出包含 "v0.2.0" 和 "svc plugin"
+grep -E "version:|svc plugin" ~/charts/appwrapperjob/Chart.yaml
+# 或
+grep "v0.2.0" /charts/appwrapperjob/templates/appwrapper.yaml
 ```
 
 ### 环境要求 / Requirements
@@ -834,6 +840,40 @@ ls ~/charts/appwrapperjob  # 或 /charts/appwrapperjob
 ---
 
 ## 常见问题 / Troubleshooting
+
+### 0. Charts 版本过旧 / Charts version outdated
+
+**问题 / Problem:** 安装后 charts 仍是旧版本，缺少 svc plugin 支持。
+
+**诊断 / Diagnose:**
+```bash
+# 检查 charts 版本
+grep "version:" ~/charts/appwrapperjob/Chart.yaml   # 或 /charts/
+# 如果显示 0.1.0，说明是旧版本
+# 如果显示 0.2.0，说明是新版本（包含 svc plugin）
+
+# 或检查模板文件
+head -1 ~/charts/appwrapperjob/templates/appwrapper.yaml
+# 新版本应显示: {{- /* Chart: appwrapperjob v0.2.0 - Volcano svc plugin support */ -}}
+```
+
+**原因 / Cause:** 安装包是基于旧代码构建的，charts 没有更新。
+
+**解决方案 / Solution:**
+```bash
+# 方案 1：重新打包安装（推荐）
+git pull origin master
+make arena-installer
+# 分发新的安装包到目标机器
+
+# 方案 2：手动更新 charts（快速修复）
+# 在开发机器上：
+scp -r charts user@target-machine:/tmp/
+# 在目标机器上：
+sudo rm -rf /charts && sudo cp -r /tmp/charts /charts
+# 或
+rm -rf ~/charts && cp -r /tmp/charts ~/charts
+```
 
 ### 1. Charts 目录未找到 / Charts directory not found
 

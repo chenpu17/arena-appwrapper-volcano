@@ -1,3 +1,4 @@
+{{- /* Chart: appwrapperjob v0.2.0 - Volcano svc plugin support */ -}}
 {{- $gpuCount := .Values.gpuCount -}}
 {{- $syncMode := .Values.syncMode -}}
 {{- $cleanPodPolicy := .Values.cleanPodPolicy -}}
