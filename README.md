@@ -26,7 +26,7 @@
 - **硬件亲和性**：支持华为昇腾等专用 AI 芯片的调度标签
 
 #### 分布式训练增强
-- **自动环境变量配置**：自动设置 `MASTER_ADDR`、`MASTER_PORT`、`NNODES`、`WORLD_SIZE`、`RANK`
+- **自动环境变量配置**：自动设置 `MASTER_ADDR`、`MASTER_PORT`、`NNODES`、`WORLD_SIZE`、`RANK`、`NODE_RANK`、`LOCAL_WORLD_SIZE`
 - **Headless Service**：自动创建用于 Pod 间 DNS 解析的服务
 - **双内部作业类型**：支持 PyTorchJob 和 Volcano Job 作为内部工作负载
 
@@ -40,6 +40,8 @@
 | `NPROC_PER_NODE` | `--nproc-per-node` 值 | 每节点进程数（仅当指定数字时） |
 | `WORLD_SIZE` | NNODES × NPROC_PER_NODE | 总进程数（如果指定了 nproc-per-node） |
 | `RANK` | volcano.sh/task-index | 当前节点编号（0, 1, 2...） |
+| `NODE_RANK` | volcano.sh/task-index | 同 RANK，swift/ms-swift 兼容 |
+| `LOCAL_WORLD_SIZE` | `--nproc-per-node` 值 | 每节点进程数，DeepSpeed 兼容 |
 
 ### 前置条件
 
@@ -230,11 +232,6 @@ arena submit appwrapperjob \
     --data-dir=/usr/local/sbin/npu-smi \
     "source /usr/local/Ascend/ascend-toolkit/set_env.sh; \
     swift sft \
-    --nnodes=\$NNODES \
-    --nproc_per_node=\$NPROC_PER_NODE \
-    --master_addr=\$MASTER_ADDR \
-    --master_port=\$MASTER_PORT \
-    --node_rank=\$RANK \
     --model /mnt/sfs_turbo/model/Qwen2.5-VL-3B-Instruct \
     --train_type full \
     --dataset /mnt/sfs_turbo/datasets \
@@ -246,9 +243,9 @@ arena submit appwrapperjob \
 
 | 项目 | 说明 |
 |-----|------|
-| **环境变量** | 使用 Arena 自动注入的 `$MASTER_ADDR`、`$MASTER_PORT`、`$NNODES`、`$NPROC_PER_NODE`、`$RANK` |
-| **分布式参数** | `--nnodes=$NNODES`（节点数）、`--node_rank=$RANK`（节点编号） |
-| **nproc-per-node** | 使用 `--nproc-per-node 16` 参数，Arena 会自动设置 `$NPROC_PER_NODE` 和正确的 `$WORLD_SIZE` |
+| **环境变量** | Arena 自动注入 `NNODES`、`NODE_RANK`、`NPROC_PER_NODE`、`MASTER_ADDR`、`MASTER_PORT` 等环境变量 |
+| **Swift 自动检测** | Swift (ms-swift) 会自动从环境变量读取分布式参数，无需在命令行传递 |
+| **nproc-per-node** | 使用 `--nproc-per-node 16` 参数，Arena 会自动设置 `$NPROC_PER_NODE`、`$WORLD_SIZE`、`$LOCAL_WORLD_SIZE` |
 | **HostPath 挂载** | `--data-dir` 挂载昇腾驱动和工具目录 |
 | **共享内存** | `--share-memory 1000Gi` 用于 HCCL 通信 |
 
@@ -537,7 +534,7 @@ This fork extends the original Arena with the following features:
 - **Hardware Affinity**: Support for Huawei Ascend and other AI accelerator scheduling labels
 
 #### Distributed Training Enhancements
-- **Automatic Environment Variables**: Auto-configure `MASTER_ADDR`, `MASTER_PORT`, `NNODES`, `WORLD_SIZE`, `RANK`
+- **Automatic Environment Variables**: Auto-configure `MASTER_ADDR`, `MASTER_PORT`, `NNODES`, `WORLD_SIZE`, `RANK`, `NODE_RANK`, `LOCAL_WORLD_SIZE`
 - **Headless Service**: Auto-create service for Pod DNS resolution
 - **Dual Inner Job Types**: Support both PyTorchJob and Volcano Job as inner workloads
 
@@ -551,6 +548,8 @@ This fork extends the original Arena with the following features:
 | `NPROC_PER_NODE` | `--nproc-per-node` value | Processes per node (only when specified as number) |
 | `WORLD_SIZE` | NNODES × NPROC_PER_NODE | Total processes (when nproc-per-node specified) |
 | `RANK` | volcano.sh/task-index | Current node index (0, 1, 2...) |
+| `NODE_RANK` | volcano.sh/task-index | Same as RANK, for swift/ms-swift compatibility |
+| `LOCAL_WORLD_SIZE` | `--nproc-per-node` value | Processes per node, for DeepSpeed compatibility |
 
 ### Prerequisites
 
@@ -723,11 +722,6 @@ arena submit appwrapperjob \
     --data-dir=/usr/local/sbin/npu-smi \
     "source /usr/local/Ascend/ascend-toolkit/set_env.sh; \
     swift sft \
-    --nnodes=\$NNODES \
-    --nproc_per_node=\$NPROC_PER_NODE \
-    --master_addr=\$MASTER_ADDR \
-    --master_port=\$MASTER_PORT \
-    --node_rank=\$RANK \
     --model /mnt/sfs_turbo/model/Qwen2.5-VL-3B-Instruct \
     --train_type full \
     --dataset /mnt/sfs_turbo/datasets \
@@ -739,9 +733,9 @@ arena submit appwrapperjob \
 
 | Item | Description |
 |------|-------------|
-| **Environment Variables** | Uses Arena auto-injected `$MASTER_ADDR`, `$MASTER_PORT`, `$NNODES`, `$NPROC_PER_NODE`, `$RANK` |
-| **Distributed Params** | `--nnodes=$NNODES` (node count), `--node_rank=$RANK` (node index) |
-| **nproc-per-node** | Use `--nproc-per-node 16` flag, Arena auto-sets `$NPROC_PER_NODE` and correct `$WORLD_SIZE` |
+| **Environment Variables** | Arena auto-injects `NNODES`, `NODE_RANK`, `NPROC_PER_NODE`, `MASTER_ADDR`, `MASTER_PORT` environment variables |
+| **Swift Auto-detection** | Swift (ms-swift) automatically reads distributed params from environment variables, no need to pass them in command line |
+| **nproc-per-node** | Use `--nproc-per-node 16` flag, Arena auto-sets `$NPROC_PER_NODE`, `$WORLD_SIZE`, `$LOCAL_WORLD_SIZE` |
 | **HostPath Mounts** | `--data-dir` mounts Ascend driver and tool directories |
 | **Shared Memory** | `--share-memory 1000Gi` for HCCL communication |
 

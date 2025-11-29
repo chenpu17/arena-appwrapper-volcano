@@ -90,6 +90,12 @@
 | `620842fa` | 2025-11-29 | docs | 添加存储配置指南（PVC/NFS） |
 | `909a6db5` | 2025-11-29 | docs | 更新修改报告统计和提交历史 |
 | `0190c7dd` | 2025-11-29 | fix | 启用 Volcano svc 插件修复 Pod DNS 解析 |
+| `4c56dabc` | 2025-11-29 | docs | 更新版本引用从 v0.2.0 到 v0.3.0 |
+| `4fa32096` | 2025-11-29 | feat | 添加 NNODES 环境变量，修复 WORLD_SIZE 计算 |
+| `f6574bb5` | 2025-11-29 | docs | 添加经验证的 Swift SFT 训练示例 |
+| `643feb16` | 2025-11-29 | feat | 添加 LOCAL_WORLD_SIZE 环境变量支持 DeepSpeed |
+| `e224fe0c` | 2025-11-29 | docs | 更新所有分布式训练示例添加 --nproc-per-node |
+| `b99ebd67` | 2025-11-29 | feat | 添加 NODE_RANK 环境变量支持 swift/ms-swift |
 
 ---
 
@@ -107,7 +113,9 @@
 - **硬件亲和性**: `--ring-controller` 支持华为昇腾等专用 AI 芯片
 
 ### 3. 分布式训练增强
-- **自动环境变量**: MASTER_ADDR、MASTER_PORT、WORLD_SIZE、RANK
+- **自动环境变量**: MASTER_ADDR、MASTER_PORT、NNODES、NPROC_PER_NODE、WORLD_SIZE、RANK、NODE_RANK、LOCAL_WORLD_SIZE
+- **Swift/ms-swift 兼容**: NODE_RANK 环境变量支持 swift 自动检测分布式配置
+- **DeepSpeed 兼容**: LOCAL_WORLD_SIZE 环境变量支持 DeepSpeed 正确识别每节点进程数
 - **Headless Service**: 自动创建用于 Pod DNS 解析的服务
 - **双内部作业类型**: 支持 PyTorchJob (`--inner-type pytorch`) 和 Volcano Job (`--inner-type volcano`)
 
@@ -202,14 +210,33 @@ spec:
 ```
 
 ### 分布式训练环境变量
-RANK 通过 Volcano 的 `volcano.sh/task-index` annotation 获取：
+RANK 和 NODE_RANK 通过 Volcano 的 `volcano.sh/task-index` annotation 获取：
 
 ```yaml
 - name: RANK
   valueFrom:
     fieldRef:
       fieldPath: metadata.annotations['volcano.sh/task-index']
+- name: NODE_RANK
+  valueFrom:
+    fieldRef:
+      fieldPath: metadata.annotations['volcano.sh/task-index']
+- name: LOCAL_WORLD_SIZE
+  value: "{{ .Values.nprocPerNode }}"
 ```
+
+**环境变量完整列表：**
+
+| 环境变量 | 值 | 说明 |
+|---------|-----|------|
+| `MASTER_ADDR` | `{job}-{task}-0.{job}` | Master 节点 DNS 地址 |
+| `MASTER_PORT` | `--master-port` 值 | 分布式通信端口 |
+| `NNODES` | `--replicas` 值 | 节点数量 |
+| `NPROC_PER_NODE` | `--nproc-per-node` 值 | 每节点进程数 |
+| `WORLD_SIZE` | NNODES × NPROC_PER_NODE | 总进程数 |
+| `RANK` | volcano.sh/task-index | 当前节点编号 |
+| `NODE_RANK` | volcano.sh/task-index | 同 RANK，swift 兼容 |
+| `LOCAL_WORLD_SIZE` | `--nproc-per-node` 值 | DeepSpeed 兼容 |
 
 ### 错误处理优化
 将 Kubernetes "not found" 错误转换为 Arena 标准错误类型：
