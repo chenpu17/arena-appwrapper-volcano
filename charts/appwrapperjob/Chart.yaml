@@ -6,4 +6,5 @@ name: appwrapperjob
 # 0.1.0 - Initial release
 # 0.2.0 - Added Volcano svc plugin support for DNS resolution (requires Volcano >= 1.8)
 # 0.3.0 - Added NNODES env var, fixed WORLD_SIZE calculation (WORLD_SIZE = NNODES * NPROC_PER_NODE)
-version: 0.3.0
+# 0.3.1 - Added LOCAL_WORLD_SIZE env var for DeepSpeed/torchrun compatibility
+version: 0.3.1

@@ -1,4 +1,4 @@
-{{- /* Chart: appwrapperjob v0.3.0 - NNODES + correct WORLD_SIZE */ -}}
+{{- /* Chart: appwrapperjob v0.3.1 - Added LOCAL_WORLD_SIZE for DeepSpeed/torchrun */ -}}
 {{- $gpuCount := .Values.gpuCount -}}
 {{- $syncMode := .Values.syncMode -}}
 {{- $cleanPodPolicy := .Values.cleanPodPolicy -}}
@@ -362,6 +362,11 @@ spec:
                     valueFrom:
                       fieldRef:
                         fieldPath: metadata.annotations['volcano.sh/task-index']
+                  {{- /* LOCAL_WORLD_SIZE: number of GPUs/processes per node (for torchrun/DeepSpeed) */}}
+                  {{- if and $nprocPerNode (regexMatch "^[0-9]+$" $nprocPerNode) }}
+                  - name: LOCAL_WORLD_SIZE
+                    value: "{{ $nprocPerNode }}"
+                  {{- end }}
                   {{- end }}
                   {{- if .Values.envs }}
                   {{- range $key, $value := .Values.envs }}
