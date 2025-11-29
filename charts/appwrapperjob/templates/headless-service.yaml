@@ -1,7 +1,10 @@
 {{- $innerJobType := .Values.innerJobType | default "pytorch" -}}
-{{- if eq $innerJobType "volcano" }}
-{{- /* Headless Service for Volcano Job DNS resolution */}}
-{{- /* This enables Pod DNS names like: <release>-<taskName>-0.<release>.<namespace>.svc.cluster.local */}}
+{{- /*
+  Volcano Job: svc plugin creates Headless Service automatically (with hostname/subdomain)
+  PyTorchJob: needs manual Headless Service
+*/}}
+{{- if eq $innerJobType "pytorch" }}
+{{- /* Headless Service for PyTorchJob DNS resolution */}}
 apiVersion: v1
 kind: Service
 metadata:

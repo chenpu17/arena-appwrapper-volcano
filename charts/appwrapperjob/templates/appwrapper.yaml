@@ -72,6 +72,9 @@ spec:
         {{- $minAvailable := .Values.minAvailable | default .Values.replicas | default 1 }}
         minAvailable: {{ $minAvailable }}
         schedulerName: {{ .Values.schedulerName | default "volcano" }}
+        plugins:
+          svc:
+            - --publish-not-ready-addresses=true
         {{- if or .Values.networkTopologyMode (gt (int .Values.highestTierAllowed) 0) }}
         networkTopology:
           {{- if .Values.networkTopologyMode }}
@@ -119,7 +122,7 @@ spec:
                     {{ $key }}: {{ $value | quote }}
                   {{- end }}
               spec:
-                subdomain: {{ .Release.Name }}
+                {{- /* hostname and subdomain are set by Volcano svc plugin */}}
                 restartPolicy: Never
                 {{- if ne (len .Values.nodeSelectors) 0 }}
                 nodeSelector:
