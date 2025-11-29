@@ -194,6 +194,134 @@ arena submit appwrapperjob \
 | `--partition-topology-mode` | - | 分区内网络拓扑模式 |
 | `--partition-highest-tier` | `0` | 分区内最高层级 |
 
+### 存储配置
+
+训练任务通常需要挂载外部存储来访问代码、数据集和保存模型。Arena 支持两种存储挂载方式：
+
+#### 存储参数
+
+| 参数 | 格式 | 说明 |
+|------|------|------|
+| `--data` | `<pvc-name>:<容器路径>` | 挂载 PVC（推荐） |
+| `--data-dir` | `<主机路径>` | 挂载 HostPath（路径相同） |
+
+#### 方式 1：使用 PVC（推荐）
+
+**步骤 1**：创建 NFS 存储资源
+
+```yaml
+# nfs-storage.yaml
+---
+# PersistentVolume - 定义 NFS 服务器
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: training-data-pv
+  labels:
+    storage: training-data
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteMany           # NFS 支持多节点读写
+  persistentVolumeReclaimPolicy: Retain
+  nfs:
+    server: 192.168.1.100     # NFS 服务器地址
+    path: /exports/training   # NFS 导出路径
+  mountOptions:
+    - nfsvers=4.1
+    - hard
+    - timeo=600
+
+---
+# PersistentVolumeClaim - 绑定 PV
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: training-data
+  namespace: ai-training
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Ti
+  selector:
+    matchLabels:
+      storage: training-data
+```
+
+```bash
+# 创建存储资源
+kubectl apply -f nfs-storage.yaml
+
+# 验证 PVC 状态
+kubectl get pvc -n ai-training
+# NAME            STATUS   VOLUME              CAPACITY   ACCESS MODES
+# training-data   Bound    training-data-pv    1Ti        RWX
+```
+
+**步骤 2**：提交任务时挂载 PVC
+
+```bash
+arena submit appwrapperjob \
+    --name my-training \
+    --namespace ai-training \
+    --data training-data:/data \
+    --data model-store:/models \
+    --image your-image:latest \
+    'python /data/train.py --output /models'
+```
+
+#### 方式 2：使用 HostPath
+
+如果 NFS 已挂载到所有节点的相同路径：
+
+```bash
+arena submit appwrapperjob \
+    --name my-training \
+    --data-dir /mnt/nfs/datasets \
+    --data-dir /mnt/nfs/models \
+    --image your-image:latest \
+    'python /mnt/nfs/datasets/train.py'
+```
+
+> **注意**：`--data-dir` 的主机路径和容器路径相同。
+
+#### 完整示例（带存储挂载）
+
+```bash
+arena submit appwrapperjob \
+    --name ascend-910c-training \
+    --namespace ai-training \
+    --image swr.cn-north-4.myhuaweicloud.com/your-org/training:latest \
+    --inner-type volcano \
+    --replicas 4 \
+    --min-available 4 \
+    --device "huawei.com/Ascend910C=16" \
+    --kueue-queue team-a-queue \
+    --data training-data:/data \
+    --data checkpoints:/checkpoints \
+    --cpu 192 \
+    --memory 768Gi \
+    --share-memory 64Gi \
+    'torchrun --nnodes=4 --nproc_per_node=16 \
+        --master_addr=$MASTER_ADDR --master_port=$MASTER_PORT --node_rank=$RANK \
+        /data/train.py --checkpoint-dir /checkpoints'
+```
+
+#### 存储设计说明
+
+Kubernetes 使用 PV/PVC 实现存储抽象：
+
+| 概念 | 创建者 | 职责 |
+|------|--------|------|
+| **PV** (PersistentVolume) | 运维 | 定义存储后端（NFS 地址、容量、访问模式） |
+| **PVC** (PersistentVolumeClaim) | 开发者 | 声明存储需求（多大、什么访问模式） |
+| **StorageClass** | 运维 | 动态供给模板（可选，自动创建 PV） |
+
+**优势**：应用只引用 PVC 名称，不关心底层是 NFS/Ceph/云盘，便于跨环境迁移。
+
 ### 任务管理
 
 ```bash
