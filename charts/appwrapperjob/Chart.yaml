@@ -1,8 +1,9 @@
 apiVersion: v1
-appVersion: "1.1"
+appVersion: "1.2"
 description: A Helm chart for AppWrapper wrapping PyTorchJob or Volcano Job
 name: appwrapperjob
 # Version History:
 # 0.1.0 - Initial release
 # 0.2.0 - Added Volcano svc plugin support for DNS resolution (requires Volcano >= 1.8)
-version: 0.2.0
+# 0.3.0 - Added NNODES env var, fixed WORLD_SIZE calculation (WORLD_SIZE = NNODES * NPROC_PER_NODE)
+version: 0.3.0

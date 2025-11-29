@@ -1,4 +1,4 @@
-{{- /* Chart: appwrapperjob v0.2.0 - Volcano svc plugin support */ -}}
+{{- /* Chart: appwrapperjob v0.3.0 - NNODES + correct WORLD_SIZE */ -}}
 {{- $gpuCount := .Values.gpuCount -}}
 {{- $syncMode := .Values.syncMode -}}
 {{- $cleanPodPolicy := .Values.cleanPodPolicy -}}
@@ -344,8 +344,20 @@ spec:
                     value: "{{ .Release.Name }}-{{ .Values.taskName | default "worker" }}-0.{{ .Release.Name }}"
                   - name: MASTER_PORT
                     value: "{{ .Values.masterPort | default 23456 }}"
-                  - name: WORLD_SIZE
+                  - name: NNODES
                     value: "{{ .Values.replicas | default 1 }}"
+                  {{- /* WORLD_SIZE: if nprocPerNode is a number, calculate total processes; otherwise use node count for backward compatibility */}}
+                  {{- $nprocPerNode := .Values.nprocPerNode | default "" }}
+                  {{- $replicas := .Values.replicas | default 1 }}
+                  {{- if and $nprocPerNode (regexMatch "^[0-9]+$" $nprocPerNode) }}
+                  - name: NPROC_PER_NODE
+                    value: "{{ $nprocPerNode }}"
+                  - name: WORLD_SIZE
+                    value: "{{ mul (int $replicas) (int $nprocPerNode) }}"
+                  {{- else }}
+                  - name: WORLD_SIZE
+                    value: "{{ $replicas }}"
+                  {{- end }}
                   - name: RANK
                     valueFrom:
                       fieldRef:

@@ -117,6 +117,11 @@ replicas: 1
 # Master port for distributed training (used in MASTER_ADDR for Volcano Job)
 masterPort: 23456
 
+# Number of processes per node (for distributed training)
+# Can be a number (e.g. "16") or special values: "auto", "cpu", "gpu"
+# Used to calculate WORLD_SIZE = replicas * nprocPerNode
+nprocPerNode: ""
+
 # Network Topology settings
 # Mode: "hard" (must satisfy) or "soft" (prefer)
 networkTopologyMode: ""
