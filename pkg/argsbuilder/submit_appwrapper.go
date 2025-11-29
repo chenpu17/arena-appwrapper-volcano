@@ -77,6 +77,7 @@ func (s *SubmitAppWrapperJobArgsBuilder) AddCommandFlags(command *cobra.Command)
 	var (
 		runningTimeout   time.Duration
 		ttlAfterFinished time.Duration
+		useSvcPlugin     bool
 	)
 
 	// Basic resource settings (inherited from PyTorch pattern)
@@ -106,6 +107,9 @@ func (s *SubmitAppWrapperJobArgsBuilder) AddCommandFlags(command *cobra.Command)
 	command.Flags().Int32Var(&s.args.Replicas, "replicas", 1, "Number of replicas for Volcano Job tasks.")
 	command.Flags().Int32Var(&s.args.MasterPort, "master-port", 23456, "Port for distributed training communication (Volcano).")
 
+	// DNS resolution settings (Volcano)
+	command.Flags().BoolVar(&useSvcPlugin, "use-svc-plugin", true, "Use Volcano svc plugin for DNS resolution (requires Volcano >= 1.8). Set to false for older Volcano versions.")
+
 	// Network Topology settings (Volcano)
 	command.Flags().StringVar(&s.args.NetworkTopologyMode, "network-topology-mode", "", "Network topology mode: 'hard' (must satisfy) or 'soft' (prefer).")
 	command.Flags().Int32Var(&s.args.HighestTierAllowed, "highest-tier-allowed", 0, "Highest network topology tier allowed. Lower tier = lower latency.")
@@ -120,7 +124,8 @@ func (s *SubmitAppWrapperJobArgsBuilder) AddCommandFlags(command *cobra.Command)
 	command.Flags().StringVar(&s.args.RingController, "ring-controller", "", "Ring controller label for hardware affinity (e.g. 'ascend-1980').")
 
 	s.AddArgValue("running-timeout", &runningTimeout).
-		AddArgValue("ttl-after-finished", &ttlAfterFinished)
+		AddArgValue("ttl-after-finished", &ttlAfterFinished).
+		AddArgValue("use-svc-plugin", &useSvcPlugin)
 }
 
 func (s *SubmitAppWrapperJobArgsBuilder) PreBuild() error {
@@ -146,6 +151,9 @@ func (s *SubmitAppWrapperJobArgsBuilder) Build() error {
 		return err
 	}
 	if err := s.setRunPolicy(); err != nil {
+		return err
+	}
+	if err := s.setSvcPluginOption(); err != nil {
 		return err
 	}
 	if err := s.check(); err != nil {
@@ -202,6 +210,15 @@ func (s *SubmitAppWrapperJobArgsBuilder) setRunPolicy() error {
 	if ft, ok := s.argValues["ttl-after-finished"]; ok {
 		ttlAfterFinished := ft.(*time.Duration)
 		s.args.TTLSecondsAfterFinished = int32(ttlAfterFinished.Seconds())
+	}
+	return nil
+}
+
+// setSvcPluginOption sets the UseSvcPlugin option for Volcano Job DNS resolution
+func (s *SubmitAppWrapperJobArgsBuilder) setSvcPluginOption() error {
+	if usp, ok := s.argValues["use-svc-plugin"]; ok {
+		useSvcPlugin := usp.(*bool)
+		s.args.UseSvcPlugin = useSvcPlugin
 	}
 	return nil
 }

@@ -101,6 +101,11 @@ type SubmitAppWrapperJobArgs struct {
 	// Default is 23456
 	MasterPort int32 `yaml:"masterPort,omitempty"`
 
+	// UseSvcPlugin enables Volcano's svc plugin for automatic Headless Service creation
+	// Requires Volcano >= 1.8. Set to false to use manual Headless Service (fallback for older versions)
+	// Default is true
+	UseSvcPlugin *bool `yaml:"useSvcPlugin,omitempty"`
+
 	// ========== Network Topology parameters (Volcano) ==========
 
 	// NetworkTopologyMode specifies the network topology mode

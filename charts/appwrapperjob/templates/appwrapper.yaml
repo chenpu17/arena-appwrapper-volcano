@@ -72,9 +72,12 @@ spec:
         {{- $minAvailable := .Values.minAvailable | default .Values.replicas | default 1 }}
         minAvailable: {{ $minAvailable }}
         schedulerName: {{ .Values.schedulerName | default "volcano" }}
+        {{- /* Use svc plugin for DNS (Volcano >= 1.8), or fallback to manual Headless Service */}}
+        {{- if ne .Values.useSvcPlugin false }}
         plugins:
           svc:
             - --publish-not-ready-addresses=true
+        {{- end }}
         {{- if or .Values.networkTopologyMode (gt (int .Values.highestTierAllowed) 0) }}
         networkTopology:
           {{- if .Values.networkTopologyMode }}
@@ -122,7 +125,10 @@ spec:
                     {{ $key }}: {{ $value | quote }}
                   {{- end }}
               spec:
-                {{- /* hostname and subdomain are set by Volcano svc plugin */}}
+                {{- /* When svc plugin is disabled, set subdomain manually for DNS resolution */}}
+                {{- if eq .Values.useSvcPlugin false }}
+                subdomain: {{ .Release.Name }}
+                {{- end }}
                 restartPolicy: Never
                 {{- if ne (len .Values.nodeSelectors) 0 }}
                 nodeSelector:

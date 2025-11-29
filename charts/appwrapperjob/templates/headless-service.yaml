@@ -1,10 +1,12 @@
 {{- $innerJobType := .Values.innerJobType | default "pytorch" -}}
 {{- /*
-  Volcano Job: svc plugin creates Headless Service automatically (with hostname/subdomain)
-  PyTorchJob: needs manual Headless Service
+  Headless Service creation rules:
+  - PyTorchJob: always create (no svc plugin support)
+  - Volcano Job with svc plugin (default): svc plugin creates Service automatically
+  - Volcano Job without svc plugin: create manual Headless Service (fallback for Volcano < 1.8)
 */}}
-{{- if eq $innerJobType "pytorch" }}
-{{- /* Headless Service for PyTorchJob DNS resolution */}}
+{{- $needManualService := or (eq $innerJobType "pytorch") (eq .Values.useSvcPlugin false) }}
+{{- if $needManualService }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -20,6 +22,9 @@ metadata:
   {{- end }}
 spec:
   clusterIP: None
+  {{- if .Values.publishNotReadyAddresses }}
+  publishNotReadyAddresses: true
+  {{- end }}
   selector:
     release: {{ .Release.Name }}
     app: {{ template "appwrapperjob.name" . }}

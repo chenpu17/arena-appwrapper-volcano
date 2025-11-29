@@ -436,6 +436,13 @@ func (b *AppWrapperJobBuilder) MasterPort(port int32) *AppWrapperJobBuilder {
 	return b
 }
 
+// UseSvcPlugin sets whether to use Volcano svc plugin for DNS resolution
+// Requires Volcano >= 1.8. Set to false for older Volcano versions
+func (b *AppWrapperJobBuilder) UseSvcPlugin(use bool) *AppWrapperJobBuilder {
+	b.args.UseSvcPlugin = &use
+	return b
+}
+
 // NetworkTopologyMode sets the network topology mode ("hard" or "soft")
 func (b *AppWrapperJobBuilder) NetworkTopologyMode(mode string) *AppWrapperJobBuilder {
 	if mode != "" {
