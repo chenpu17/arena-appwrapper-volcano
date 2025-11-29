@@ -1,4 +1,4 @@
-{{- /* Chart: appwrapperjob v0.3.1 - Added LOCAL_WORLD_SIZE for DeepSpeed/torchrun */ -}}
+{{- /* Chart: appwrapperjob v0.3.2 - Added NODE_RANK for swift/ms-swift compatibility */ -}}
 {{- $gpuCount := .Values.gpuCount -}}
 {{- $syncMode := .Values.syncMode -}}
 {{- $cleanPodPolicy := .Values.cleanPodPolicy -}}
@@ -359,6 +359,11 @@ spec:
                     value: "{{ $replicas }}"
                   {{- end }}
                   - name: RANK
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: metadata.annotations['volcano.sh/task-index']
+                  {{- /* NODE_RANK: alias for RANK, required by swift/ms-swift for torchrun */}}
+                  - name: NODE_RANK
                     valueFrom:
                       fieldRef:
                         fieldPath: metadata.annotations['volcano.sh/task-index']
