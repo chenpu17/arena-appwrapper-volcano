@@ -385,7 +385,7 @@ func UpdateLWSJob(lwsJob *lwsv1.LeaderWorkerSet) error {
 	return err
 }
 
-// PatchOwnerReferenceWithAppInfoFile patch tfjob / pytorchjob ownerReference
+// PatchOwnerReferenceWithAppInfoFile patch tfjob / pytorchjob / appwrapper ownerReference
 func PatchOwnerReferenceWithAppInfoFile(name, trainingType, appInfoFile, namespace string) error {
 	data, err := os.ReadFile(appInfoFile)
 	if err != nil {
@@ -405,8 +405,14 @@ func PatchOwnerReferenceWithAppInfoFile(name, trainingType, appInfoFile, namespa
 	}
 	errs := []string{}
 
+	// determine the resource type to get for ownerReference
+	resourceType := trainingType
+	if trainingType == "appwrapperjob" {
+		resourceType = "appwrappers.workload.codeflare.dev"
+	}
+
 	// get training job
-	args := []string{binary, "get", trainingType, name, "--namespace", namespace, "-o json"}
+	args := []string{binary, "get", resourceType, name, "--namespace", namespace, "-o json"}
 	cmd := exec.Command("bash", "-c", strings.Join(args, " "))
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -428,9 +434,10 @@ func PatchOwnerReferenceWithAppInfoFile(name, trainingType, appInfoFile, namespa
 	resources = append(resources, "configmap/"+configmapName)
 
 	for _, resource := range resources {
-		// skip tfjob / pytorchjob.
+		// skip tfjob / pytorchjob / appwrapper itself
 		if resource == "tfjob.kubeflow.org/"+name ||
-			resource == "pytorchjob.kubeflow.org/"+name {
+			resource == "pytorchjob.kubeflow.org/"+name ||
+			resource == "appwrapper.workload.codeflare.dev/"+name {
 			continue
 		}
 

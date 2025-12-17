@@ -97,16 +97,8 @@ func (aj *AppWrapperJob) GetStatus() string {
 	case appwrapperv1beta2.AppWrapperEmpty, appwrapperv1beta2.AppWrapperSuspended:
 		status = string(types.TrainingJobQueuing)
 	case appwrapperv1beta2.AppWrapperResuming:
-		// Check conditions for more detailed status during resuming
-		if aj.hasCondition(appwrapperv1beta2.AppWrapperConditionQuotaReserved, true) {
-			if aj.hasCondition(appwrapperv1beta2.AppWrapperConditionResourcesDeployed, true) {
-				status = string(types.TrainingJobPending) // Resources deployed, waiting for pods
-			} else {
-				status = string(types.TrainingJobPending) // Quota reserved, deploying resources
-			}
-		} else {
-			status = string(types.TrainingJobQueuing) // Waiting for quota
-		}
+		// Map Resuming to Running for consistency with other job types (suspended --> running)
+		status = string(types.TrainingJobRunning)
 	case appwrapperv1beta2.AppWrapperRunning:
 		// Check if unhealthy
 		if aj.hasCondition(appwrapperv1beta2.AppWrapperConditionUnhealthy, true) {

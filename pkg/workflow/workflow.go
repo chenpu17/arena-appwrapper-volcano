@@ -200,9 +200,10 @@ func SubmitJob(name string, trainingType string, namespace string, values interf
 		return err
 	}
 
-	// 6. Patch OwnerReference for tfjob / pytorchjob
+	// 6. Patch OwnerReference for tfjob / pytorchjob / appwrapperjob
 	if trainingType == string(types.TFTrainingJob) ||
-		trainingType == string(types.PytorchTrainingJob) {
+		trainingType == string(types.PytorchTrainingJob) ||
+		trainingType == string(types.AppWrapperJob) {
 		err := kubectl.PatchOwnerReferenceWithAppInfoFile(name, trainingType, appInfoFileName, namespace)
 		if err != nil {
 			log.Debugf("Failed to patch ownerReference %s due to %v`", name, err)
