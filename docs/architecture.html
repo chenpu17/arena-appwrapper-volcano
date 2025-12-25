@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena AppWrapper + Volcano 增强版 - 架构设计文档</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --accent: #06b6d4;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --volcano: #ff6b35;
+            --ascend: #00d4aa;
+            --kueue: #8b5cf6;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--gray-800);
+            background: var(--gray-50);
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--volcano) 0%, var(--primary) 50%, var(--ascend) 100%);
+            color: white;
+            padding: 60px 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        header h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        header .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 18px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .badge.new {
+            background: linear-gradient(135deg, var(--volcano), var(--danger));
+            font-weight: bold;
+        }
+
+        /* Navigation */
+        nav {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 15px 0;
+            gap: 5px;
+        }
+
+        nav a {
+            color: var(--gray-700);
+            text-decoration: none;
+            padding: 10px 18px;
+            border-radius: 8px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        nav a:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Sections */
+        section { padding: 60px 0; }
+        section:nth-child(even) { background: white; }
+
+        section h2 {
+            font-size: 2rem;
+            color: var(--gray-900);
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        section h2::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--volcano), var(--ascend));
+            margin: 15px auto 0;
+            border-radius: 2px;
+        }
+
+        h3 {
+            font-size: 1.4rem;
+            color: var(--gray-800);
+            margin: 30px 0 15px;
+        }
+
+        /* Cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 1px solid var(--gray-200);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+        }
+
+        .card.highlight {
+            border: 2px solid var(--volcano);
+            background: linear-gradient(135deg, #fff5f2 0%, #fff 100%);
+        }
+
+        .card-icon {
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, var(--volcano), var(--ascend));
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 26px;
+        }
+
+        .card h4 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--gray-800);
+        }
+
+        .card p {
+            color: var(--gray-600);
+            font-size: 0.95rem;
+        }
+
+        /* Architecture Diagram */
+        .arch-diagram {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin: 30px 0;
+            overflow-x: auto;
+        }
+
+        .arch-diagram svg {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+
+        /* Code blocks */
+        pre {
+            background: var(--gray-900);
+            color: #e5e7eb;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-x: auto;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin: 15px 0;
+        }
+
+        code {
+            background: var(--gray-200);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 0.85em;
+        }
+
+        pre code { background: transparent; padding: 0; }
+
+        .code-title {
+            background: var(--gray-800);
+            color: var(--gray-300);
+            padding: 10px 20px;
+            border-radius: 12px 12px 0 0;
+            font-size: 0.85rem;
+            margin-bottom: -12px;
+            display: inline-block;
+        }
+
+        /* Tables */
+        .table-wrapper {
+            overflow-x: auto;
+            margin: 20px 0;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 14px 18px;
+            text-align: left;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        th {
+            background: var(--gray-100);
+            font-weight: 600;
+            color: var(--gray-700);
+        }
+
+        tr:hover { background: var(--gray-50); }
+
+        /* Info boxes */
+        .info-box {
+            padding: 20px;
+            border-radius: 12px;
+            margin: 20px 0;
+            border-left: 4px solid;
+        }
+
+        .info-box.new {
+            background: linear-gradient(135deg, #fff5f2 0%, #fef3c7 100%);
+            border-color: var(--volcano);
+        }
+
+        .info-box.tip {
+            background: #ecfdf5;
+            border-color: var(--success);
+        }
+
+        /* Comparison */
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin: 30px 0;
+        }
+
+        @media (max-width: 768px) {
+            .comparison { grid-template-columns: 1fr; }
+        }
+
+        .comparison-box {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        }
+
+        .comparison-box.original { border-top: 4px solid var(--primary); }
+        .comparison-box.enhanced { border-top: 4px solid var(--volcano); }
+
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin: 2px;
+        }
+
+        .tag.new { background: linear-gradient(135deg, #ffedd5, #fed7aa); color: #c2410c; }
+        .tag.volcano { background: #ffedd5; color: #c2410c; }
+        .tag.kueue { background: #ede9fe; color: #6d28d9; }
+        .tag.ascend { background: #d1fae5; color: #047857; }
+
+        /* Feature list */
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            background: var(--gray-100);
+            border-radius: 8px;
+        }
+
+        .feature-item.new {
+            background: linear-gradient(135deg, #fff5f2 0%, #ffedd5 100%);
+            border: 1px solid #fed7aa;
+        }
+
+        .feature-item .check {
+            color: var(--success);
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .feature-item .new-badge {
+            background: var(--volcano);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: bold;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--gray-900);
+            color: var(--gray-300);
+            padding: 40px 0;
+            text-align: center;
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        footer a:hover { text-decoration: underline; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 { font-size: 2rem; }
+            nav ul { padding: 10px; }
+            nav a { padding: 8px 12px; font-size: 0.9rem; }
+            section { padding: 40px 0; }
+        }
+
+        /* Syntax highlighting */
+        .keyword { color: #c678dd; }
+        .string { color: #98c379; }
+        .comment { color: #5c6370; }
+        .flag { color: #e5c07b; }
+        .value { color: #d19a66; }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-in { animation: fadeIn 0.6s ease-out; }
+
+        /* Diff highlight */
+        .diff-add {
+            background: #d1fae5;
+            border-left: 3px solid var(--success);
+            padding: 2px 8px;
+            margin: 2px 0;
+            display: block;
+        }
+
+        .diff-remove {
+            background: #fee2e2;
+            border-left: 3px solid var(--danger);
+            padding: 2px 8px;
+            margin: 2px 0;
+            display: block;
+            text-decoration: line-through;
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Arena AppWrapper + Volcano</h1>
+            <p class="subtitle">基于 Kubeflow Arena 的昇腾分布式训练增强方案</p>
+            <div class="badges">
+                <span class="badge">基于 Arena v0.15.3</span>
+                <span class="badge new">AppWrapper 集成</span>
+                <span class="badge new">Volcano 调度</span>
+                <span class="badge new">昇腾 NPU 支持</span>
+                <span class="badge">v0.3.2</span>
+            </div>
+        </div>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="#overview">概述</a></li>
+            <li><a href="#architecture">架构对比</a></li>
+            <li><a href="#changes">核心改动</a></li>
+            <li><a href="#features">新增特性</a></li>
+            <li><a href="#usage">使用示例</a></li>
+            <li><a href="#files">修改文件</a></li>
+        </ul>
+    </nav>
+
+    <!-- Overview Section -->
+    <section id="overview">
+        <div class="container">
+            <h2>项目概述</h2>
+            <p style="text-align: center; max-width: 900px; margin: 0 auto 30px; color: var(--gray-600); font-size: 1.1rem;">
+                本项目基于 Kubeflow Arena v0.15.3，新增了 <strong>AppWrapper + Volcano Job</strong> 的完整支持，
+                专为<strong>昇腾 NPU</strong> 分布式训练场景优化，实现了 Kueue 配额管理与 Volcano 超节点亲和调度的深度集成。
+            </p>
+
+            <div class="card-grid">
+                <div class="card highlight">
+                    <div class="card-icon">📦</div>
+                    <h4>AppWrapper 集成</h4>
+                    <p>通过 AppWrapper 桥接 Kueue 配额管理，解决 Volcano Job 不支持 suspend 字段的兼容性问题。</p>
+                    <span class="tag new">新增</span>
+                </div>
+                <div class="card highlight">
+                    <div class="card-icon">🌋</div>
+                    <h4>Volcano 调度增强</h4>
+                    <p>支持网络拓扑调度、Gang Scheduling、分区策略，优化大规模分布式训练性能。</p>
+                    <span class="tag new">新增</span>
+                </div>
+                <div class="card highlight">
+                    <div class="card-icon">🚀</div>
+                    <h4>昇腾 NPU 优化</h4>
+                    <p>针对华为昇腾 910B 等 NPU 设备优化，支持超节点亲和调度和 HCCL 通信。</p>
+                    <span class="tag new">新增</span>
+                </div>
+                <div class="card highlight">
+                    <div class="card-icon">⚙️</div>
+                    <h4>自动化配置</h4>
+                    <p>自动设置分布式训练环境变量（MASTER_ADDR、WORLD_SIZE、RANK 等），简化用户配置。</p>
+                    <span class="tag new">新增</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section id="architecture">
+        <div class="container">
+            <h2>架构对比</h2>
+
+            <h3>原始 Arena 架构</h3>
+            <div class="arch-diagram">
+                <svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="arena-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#6366f1"/>
+                            <stop offset="100%" style="stop-color:#ec4899"/>
+                        </linearGradient>
+                        <linearGradient id="k8s-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#326ce5"/>
+                            <stop offset="100%" style="stop-color:#1d4ed8"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- User -->
+                    <rect x="30" y="40" width="120" height="70" rx="10" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2"/>
+                    <text x="90" y="65" text-anchor="middle" font-size="12" fill="#374151" font-weight="bold">数据科学家</text>
+                    <text x="90" y="90" text-anchor="middle" font-size="24">👨‍🔬</text>
+
+                    <!-- Arena CLI -->
+                    <rect x="200" y="40" width="140" height="70" rx="10" fill="url(#arena-grad)"/>
+                    <text x="270" y="65" text-anchor="middle" font-size="13" fill="white" font-weight="bold">Arena CLI</text>
+                    <text x="270" y="85" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">submit / get / logs</text>
+
+                    <!-- Arrow -->
+                    <path d="M150 75 L200 75" stroke="#9ca3af" stroke-width="2" marker-end="url(#arr1)"/>
+
+                    <!-- K8s -->
+                    <rect x="400" y="20" width="370" height="110" rx="12" fill="white" stroke="#326ce5" stroke-width="2"/>
+                    <rect x="400" y="20" width="370" height="35" rx="12" fill="url(#k8s-grad)"/>
+                    <text x="585" y="45" text-anchor="middle" font-size="12" fill="white" font-weight="bold">Kubernetes 集群</text>
+
+                    <!-- Operators -->
+                    <rect x="420" y="70" width="100" height="45" rx="6" fill="#dbeafe" stroke="#93c5fd"/>
+                    <text x="470" y="90" text-anchor="middle" font-size="10" fill="#1d4ed8" font-weight="bold">Training Operator</text>
+                    <text x="470" y="105" text-anchor="middle" font-size="9" fill="#3b82f6">TFJob/PyTorchJob</text>
+
+                    <rect x="540" y="70" width="100" height="45" rx="6" fill="#dbeafe" stroke="#93c5fd"/>
+                    <text x="590" y="90" text-anchor="middle" font-size="10" fill="#1d4ed8" font-weight="bold">MPI Operator</text>
+                    <text x="590" y="105" text-anchor="middle" font-size="9" fill="#3b82f6">MPIJob</text>
+
+                    <rect x="660" y="70" width="90" height="45" rx="6" fill="#dcfce7" stroke="#86efac"/>
+                    <text x="705" y="90" text-anchor="middle" font-size="10" fill="#166534" font-weight="bold">Serving</text>
+                    <text x="705" y="105" text-anchor="middle" font-size="9" fill="#22c55e">TF Serving</text>
+
+                    <!-- Arrow to K8s -->
+                    <path d="M340 75 L400 75" stroke="#6366f1" stroke-width="2" marker-end="url(#arr2)"/>
+
+                    <!-- GPU Nodes -->
+                    <rect x="400" y="160" width="370" height="60" rx="10" fill="#10b981"/>
+                    <text x="585" y="185" text-anchor="middle" font-size="12" fill="white" font-weight="bold">GPU 节点</text>
+                    <text x="585" y="205" text-anchor="middle" font-size="10" fill="rgba(255,255,255,0.9)">NVIDIA A100 / V100</text>
+
+                    <!-- Arrow to GPU -->
+                    <path d="M585 130 L585 160" stroke="#10b981" stroke-width="2" marker-end="url(#arr3)"/>
+
+                    <defs>
+                        <marker id="arr1" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#9ca3af"/>
+                        </marker>
+                        <marker id="arr2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+                        </marker>
+                        <marker id="arr3" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#10b981"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+
+            <h3 style="color: var(--volcano);">增强版架构（AppWrapper + Volcano）</h3>
+            <div class="arch-diagram" style="border: 2px solid var(--volcano);">
+                <svg viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="arena-grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b35"/>
+                            <stop offset="100%" style="stop-color:#6366f1"/>
+                        </linearGradient>
+                        <linearGradient id="kueue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#8b5cf6"/>
+                            <stop offset="100%" style="stop-color:#6d28d9"/>
+                        </linearGradient>
+                        <linearGradient id="volcano-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#ff6b35"/>
+                            <stop offset="100%" style="stop-color:#dc2626"/>
+                        </linearGradient>
+                        <linearGradient id="ascend-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" style="stop-color:#00d4aa"/>
+                            <stop offset="100%" style="stop-color:#059669"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- Title -->
+                    <text x="450" y="25" text-anchor="middle" font-size="14" fill="#ff6b35" font-weight="bold">增强版架构</text>
+
+                    <!-- User -->
+                    <rect x="20" y="50" width="100" height="60" rx="8" fill="#f3f4f6" stroke="#d1d5db" stroke-width="2"/>
+                    <text x="70" y="72" text-anchor="middle" font-size="11" fill="#374151" font-weight="bold">数据科学家</text>
+                    <text x="70" y="95" text-anchor="middle" font-size="20">👨‍🔬</text>
+
+                    <!-- Arena CLI Enhanced -->
+                    <rect x="160" y="50" width="130" height="60" rx="8" fill="url(#arena-grad2)"/>
+                    <text x="225" y="72" text-anchor="middle" font-size="12" fill="white" font-weight="bold">Arena CLI</text>
+                    <text x="225" y="90" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.9)">appwrapperjob</text>
+                    <rect x="170" y="95" width="40" height="12" rx="3" fill="rgba(255,255,255,0.3)"/>
+                    <text x="190" y="104" text-anchor="middle" font-size="7" fill="white">NEW</text>
+
+                    <!-- Arrow User to Arena -->
+                    <path d="M120 80 L160 80" stroke="#9ca3af" stroke-width="2" marker-end="url(#arr4)"/>
+
+                    <!-- K8s Cluster -->
+                    <rect x="330" y="40" width="550" height="320" rx="12" fill="white" stroke="#326ce5" stroke-width="2"/>
+                    <rect x="330" y="40" width="550" height="30" rx="12" fill="#326ce5"/>
+                    <text x="605" y="60" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Kubernetes 集群</text>
+
+                    <!-- Arrow Arena to K8s -->
+                    <path d="M290 80 L330 80" stroke="#ff6b35" stroke-width="2" marker-end="url(#arr5)"/>
+
+                    <!-- Kueue -->
+                    <rect x="350" y="85" width="120" height="55" rx="8" fill="url(#kueue-grad)"/>
+                    <text x="410" y="105" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Kueue</text>
+                    <text x="410" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.9)">配额管理</text>
+                    <text x="410" y="132" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.8)">LocalQueue</text>
+
+                    <!-- AppWrapper -->
+                    <rect x="500" y="85" width="130" height="55" rx="8" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+                    <text x="565" y="105" text-anchor="middle" font-size="11" fill="#92400e" font-weight="bold">AppWrapper</text>
+                    <text x="565" y="120" text-anchor="middle" font-size="8" fill="#b45309">suspend 桥接</text>
+                    <rect x="510" y="125" width="30" height="10" rx="2" fill="#ff6b35"/>
+                    <text x="525" y="133" text-anchor="middle" font-size="6" fill="white">NEW</text>
+
+                    <!-- Volcano Job -->
+                    <rect x="660" y="85" width="120" height="55" rx="8" fill="url(#volcano-grad)"/>
+                    <text x="720" y="105" text-anchor="middle" font-size="11" fill="white" font-weight="bold">Volcano Job</text>
+                    <text x="720" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.9)">Gang Scheduling</text>
+                    <text x="720" y="132" text-anchor="middle" font-size="7" fill="rgba(255,255,255,0.8)">网络拓扑</text>
+
+                    <!-- Arrows between components -->
+                    <path d="M470 112 L500 112" stroke="#f59e0b" stroke-width="2" marker-end="url(#arr6)"/>
+                    <path d="M630 112 L660 112" stroke="#ff6b35" stroke-width="2" marker-end="url(#arr7)"/>
+
+                    <!-- Volcano Scheduler -->
+                    <rect x="350" y="160" width="200" height="50" rx="8" fill="#ffedd5" stroke="#fb923c" stroke-width="2"/>
+                    <text x="450" y="182" text-anchor="middle" font-size="11" fill="#c2410c" font-weight="bold">Volcano Scheduler</text>
+                    <text x="450" y="198" text-anchor="middle" font-size="8" fill="#ea580c">超节点亲和调度 / 分区策略</text>
+
+                    <!-- Worker Pods -->
+                    <rect x="350" y="230" width="430" height="50" rx="8" fill="#f3f4f6"/>
+                    <text x="420" y="260" text-anchor="middle" font-size="10" fill="#374151">Worker-0</text>
+                    <text x="500" y="260" text-anchor="middle" font-size="10" fill="#374151">Worker-1</text>
+                    <text x="580" y="260" text-anchor="middle" font-size="10" fill="#374151">Worker-2</text>
+                    <text x="660" y="260" text-anchor="middle" font-size="10" fill="#374151">...</text>
+                    <text x="730" y="260" text-anchor="middle" font-size="10" fill="#374151">Worker-N</text>
+
+                    <!-- Ascend NPU Nodes -->
+                    <rect x="350" y="300" width="430" height="50" rx="8" fill="url(#ascend-grad)"/>
+                    <text x="565" y="322" text-anchor="middle" font-size="12" fill="white" font-weight="bold">昇腾 NPU 节点集群</text>
+                    <text x="565" y="340" text-anchor="middle" font-size="9" fill="rgba(255,255,255,0.9)">Ascend 910B / HCCL 通信</text>
+
+                    <!-- Arrows -->
+                    <path d="M450 210 L450 230" stroke="#fb923c" stroke-width="2" marker-end="url(#arr8)"/>
+                    <path d="M565 280 L565 300" stroke="#00d4aa" stroke-width="2" marker-end="url(#arr9)"/>
+
+                    <!-- Legend -->
+                    <rect x="810" y="85" width="60" height="80" rx="6" fill="#f9fafb" stroke="#e5e7eb"/>
+                    <text x="840" y="100" text-anchor="middle" font-size="8" fill="#6b7280" font-weight="bold">图例</text>
+                    <rect x="815" y="108" width="12" height="12" rx="2" fill="#8b5cf6"/>
+                    <text x="832" y="117" font-size="7" fill="#374151">Kueue</text>
+                    <rect x="815" y="125" width="12" height="12" rx="2" fill="#ff6b35"/>
+                    <text x="832" y="134" font-size="7" fill="#374151">Volcano</text>
+                    <rect x="815" y="142" width="12" height="12" rx="2" fill="#00d4aa"/>
+                    <text x="832" y="151" font-size="7" fill="#374151">昇腾</text>
+
+                    <defs>
+                        <marker id="arr4" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="#9ca3af"/>
+                        </marker>
+                        <marker id="arr5" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="#ff6b35"/>
+                        </marker>
+                        <marker id="arr6" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="#f59e0b"/>
+                        </marker>
+                        <marker id="arr7" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="#ff6b35"/>
+                        </marker>
+                        <marker id="arr8" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="#fb923c"/>
+                        </marker>
+                        <marker id="arr9" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+                            <polygon points="0 0, 8 3, 0 6" fill="#00d4aa"/>
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </div>
+    </section>
+
+    <!-- Changes Section -->
+    <section id="changes">
+        <div class="container">
+            <h2>核心改动点</h2>
+
+            <h3>1. 新增 AppWrapperJob 训练类型</h3>
+            <div class="info-box new">
+                <strong>解决的问题：</strong>Volcano Job 不支持 <code>suspend</code> 字段，无法与 Kueue 配额管理集成。
+                通过 AppWrapper 作为桥接层，实现了 Kueue 对 Volcano Job 的配额控制。
+            </div>
+
+            <h3>2. OwnerReference 级联删除</h3>
+            <div class="info-box new">
+                <strong>最新改动：</strong>为 AppWrapper 类型添加 ownerReference 支持，删除 AppWrapper 时自动级联删除 ConfigMap 等子资源。
+            </div>
+
+            <h3>3. 状态映射简化</h3>
+            <div class="comparison">
+                <div class="comparison-box original">
+                    <h4 style="color: var(--primary);">修改前</h4>
+                    <pre style="font-size: 0.8rem;"><code>Resuming + QuotaReserved=false → Queuing
+Resuming + QuotaReserved=true  → Pending</code></pre>
+                </div>
+                <div class="comparison-box enhanced">
+                    <h4 style="color: var(--volcano);">修改后</h4>
+                    <pre style="font-size: 0.8rem;"><code>Resuming → Running
+(与其他 job 类型保持一致)</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features">
+        <div class="container">
+            <h2>新增特性</h2>
+
+            <div class="feature-list">
+                <div class="feature-item new">
+                    <span class="check">✓</span>
+                    <span>AppWrapper + Volcano Job 集成</span>
+                    <span class="new-badge">NEW</span>
+                </div>
+                <div class="feature-item new">
+                    <span class="check">✓</span>
+                    <span>Kueue 配额管理（LocalQueue）</span>
+                    <span class="new-badge">NEW</span>
+                </div>
+                <div class="feature-item new">
+                    <span class="check">✓</span>
+                    <span>网络拓扑调度（超节点亲和）</span>
+                    <span class="new-badge">NEW</span>
+                </div>
+                <div class="feature-item new">
+                    <span class="check">✓</span>
+                    <span>自动设置分布式环境变量</span>
+                    <span class="new-badge">NEW</span>
+                </div>
+                <div class="feature-item new">
+                    <span class="check">✓</span>
+                    <span>OwnerReference 级联删除</span>
+                    <span class="new-badge">NEW</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Usage Section -->
+    <section id="usage">
+        <div class="container">
+            <h2>使用示例</h2>
+
+            <div class="code-title">提交 AppWrapper + Volcano 分布式训练</div>
+            <pre><code><span class="comment"># 提交 4 节点分布式训练任务</span>
+arena submit appwrapperjob my-training \
+  <span class="flag">--replicas</span> <span class="value">4</span> \
+  <span class="flag">--gpus</span> <span class="value">8</span> \
+  <span class="flag">--image</span> <span class="string">my-registry/training:v1</span> \
+  <span class="flag">--local-queue</span> <span class="string">default-queue</span> \
+  <span class="flag">--inner-job-type</span> <span class="string">volcano</span> \
+  <span class="flag">--scheduler-name</span> <span class="string">volcano</span> \
+  <span class="string">"torchrun --nproc_per_node=8 train.py"</span></code></pre>
+        </div>
+    </section>
+
+    <!-- Files Section -->
+    <section id="files">
+        <div class="container">
+            <h2>修改文件清单</h2>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr><th>模块</th><th>文件</th><th>改动</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>CLI</td><td>pkg/commands/training/submit_appwrapperjob.go</td><td>新增</td></tr>
+                        <tr><td>Args</td><td>pkg/argsbuilder/submit_appwrapper.go</td><td>新增</td></tr>
+                        <tr><td>Types</td><td>pkg/apis/types/submit_appwrapper.go</td><td>新增</td></tr>
+                        <tr><td>Trainer</td><td>pkg/training/trainer_appwrapper.go</td><td>新增</td></tr>
+                        <tr><td>Workflow</td><td>pkg/workflow/workflow.go</td><td>修改</td></tr>
+                        <tr><td>Kubectl</td><td>pkg/util/kubectl/kubectl.go</td><td>修改</td></tr>
+                        <tr><td>Chart</td><td>charts/appwrapperjob/*</td><td>新增</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>Arena AppWrapper + Volcano 增强版</p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                基于 Arena v0.15.3 | 版本 v0.3.2 | 2025-12-25
+            </p>
+        </div>
+    </footer>
+</body>
+</html>
