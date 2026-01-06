@@ -126,7 +126,7 @@ func BuildJobInfo(job TrainingJob, showGPUs bool, services []*corev1.Service, no
 		Name:      job.Name(),
 		UUID:      job.Uid(),
 		Namespace: job.Namespace(),
-		Status:    types.TrainingJobStatus(GetJobRealStatus(job)),
+		Status:    types.TrainingJobStatus(GetJobDisplayStatus(job)),
 		//Duration:     util.ShortHumanDuration(job.Duration()),
 		Duration:     fmt.Sprintf("%vs", int(job.Duration().Seconds())),
 		Trainer:      job.Trainer(),
@@ -176,6 +176,18 @@ func GetJobRealStatus(job TrainingJob) string {
 		}
 	}
 	return jobStatus
+}
+
+// GetJobDisplayStatus returns the display status for user-facing output
+// For AppWrapperJob, it uses GetDisplayStatus() to map phases to PyTorchJob-compatible statuses
+// For other job types, it uses GetJobRealStatus()
+func GetJobDisplayStatus(job TrainingJob) string {
+	// Check if the job is an AppWrapperJob
+	if awJob, ok := job.(*AppWrapperJob); ok {
+		return awJob.GetDisplayStatus()
+	}
+	// For other job types, use the real status
+	return GetJobRealStatus(job)
 }
 
 func GetJobGpuMetric(client *kubernetes.Clientset, job TrainingJob) (jobMetric prometheus.JobGpuMetric, err error) {

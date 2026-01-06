@@ -119,6 +119,35 @@ func (aj *AppWrapperJob) GetStatus() string {
 	return status
 }
 
+// GetDisplayStatus returns the display status for user-facing output
+// Maps AppWrapper phases to PyTorchJob-compatible statuses for consistent user experience
+// across GPU (PyTorchJob) and NPU (AppWrapper+Volcano) clusters
+func (aj *AppWrapperJob) GetDisplayStatus() string {
+	if aj.appwrapper.Name == "" {
+		return string(types.TrainingJobPending)
+	}
+
+	switch aj.appwrapper.Status.Phase {
+	case appwrapperv1beta2.AppWrapperEmpty,
+		appwrapperv1beta2.AppWrapperSuspended,
+		appwrapperv1beta2.AppWrapperResuming,
+		appwrapperv1beta2.AppWrapperResetting,
+		appwrapperv1beta2.AppWrapperSuspending:
+		return string(types.TrainingJobSuspended)
+	case appwrapperv1beta2.AppWrapperRunning:
+		if aj.hasCondition(appwrapperv1beta2.AppWrapperConditionUnhealthy, true) {
+			return string(types.TrainingJobFailed)
+		}
+		return string(types.TrainingJobRunning)
+	case appwrapperv1beta2.AppWrapperSucceeded:
+		return string(types.TrainingJobSucceeded)
+	case appwrapperv1beta2.AppWrapperFailed, appwrapperv1beta2.AppWrapperTerminating:
+		return string(types.TrainingJobFailed)
+	default:
+		return string(types.TrainingJobPending)
+	}
+}
+
 // hasCondition checks if the AppWrapper has a specific condition with the expected status
 func (aj *AppWrapperJob) hasCondition(conditionType string, expectedStatus bool) bool {
 	for _, cond := range aj.appwrapper.Status.Conditions {

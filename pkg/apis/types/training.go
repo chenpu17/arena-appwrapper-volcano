@@ -167,6 +167,8 @@ const (
 	TrainingJobSucceeded TrainingJobStatus = "SUCCEEDED"
 	// TrainingJobFailed means the job is failed
 	TrainingJobFailed TrainingJobStatus = "FAILED"
+	// TrainingJobSuspended means the job is suspended (for AppWrapper/PyTorchJob compatibility)
+	TrainingJobSuspended TrainingJobStatus = "SUSPENDED"
 )
 
 // TrainingJobInstance defines the instance of training job

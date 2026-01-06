@@ -427,6 +427,24 @@ arena logs my-job --type appwrapperjob
 arena delete my-job --type appwrapperjob
 ```
 
+#### 状态显示说明
+
+为了统一 GPU 集群（PyTorchJob）和 NPU 集群（AppWrapper + Volcano）的用户体验，`arena get/list` 命令对 AppWrapper 任务的状态进行了映射转换：
+
+| AppWrapper Phase | Arena 显示状态 | 说明 |
+|------------------|---------------|------|
+| Empty | SUSPENDED | 任务等待调度 |
+| Suspended | SUSPENDED | 任务被暂停 |
+| Resuming | SUSPENDED | 任务恢复中 |
+| Resetting | SUSPENDED | 任务重置中 |
+| Suspending | SUSPENDED | 任务暂停中 |
+| Running | RUNNING | 任务运行中 |
+| Succeeded | SUCCEEDED | 任务成功完成 |
+| Failed | FAILED | 任务失败 |
+| Terminating | FAILED | 任务终止中 |
+
+> **注意**：此状态映射仅影响 `arena get/list` 的显示输出，不影响 `arena prune` 等业务逻辑的内部状态判断。
+
 ### 示例文件
 
 更多示例请参考 [samples/appwrapper](samples/appwrapper/) 目录：
@@ -787,6 +805,24 @@ arena logs my-job --type appwrapperjob
 # Delete job
 arena delete my-job --type appwrapperjob
 ```
+
+#### Status Display
+
+To unify user experience across GPU clusters (PyTorchJob) and NPU clusters (AppWrapper + Volcano), the `arena get/list` commands map AppWrapper status to PyTorchJob-compatible statuses:
+
+| AppWrapper Phase | Arena Display Status | Description |
+|------------------|---------------------|-------------|
+| Empty | SUSPENDED | Job waiting for scheduling |
+| Suspended | SUSPENDED | Job is suspended |
+| Resuming | SUSPENDED | Job is resuming |
+| Resetting | SUSPENDED | Job is resetting |
+| Suspending | SUSPENDED | Job is suspending |
+| Running | RUNNING | Job is running |
+| Succeeded | SUCCEEDED | Job completed successfully |
+| Failed | FAILED | Job failed |
+| Terminating | FAILED | Job is terminating |
+
+> **Note**: This status mapping only affects `arena get/list` display output. It does not affect internal status logic used by `arena prune` and other business operations.
 
 ### Examples
 
